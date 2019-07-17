@@ -6,7 +6,7 @@ print('Successful import of uic') #often reinstallation of PyQt5 is required
 
 from PyQt5.QtCore import (QCoreApplication, QThread, QThreadPool, pyqtSignal, pyqtSlot, Qt, QTimer, QDateTime)
 from PyQt5.QtGui import (QImage, QPixmap, QTextCursor)
-from PyQt5.QtWidgets import (QWidget, QMainWindow, QApplication, QLabel, QPushButton, QVBoxLayout, QGridLayout, QSizePolicy, QMessageBox, QFileDialog, QSlider, QComboBox, QProgressDialog)
+from PyQt5.QtWidgets import (QWidget, QMainWindow, QApplication, QLabel, QPushButton, QVBoxLayout, QGridLayout, QSizePolicy, QMessageBox, QFileDialog, QSlider, QComboBox, QProgressDialog, QDialog)
 
 import sys
 import os.path
@@ -19,10 +19,8 @@ import psutil
 from uvctypesParabilis_v2 import *
 from multiprocessing  import Queue
 import threading
-from subprocess import call
-
 import pantilthat
-
+from subprocess import call
 
 print('Loaded Packages and Starting IR Data...')
 
@@ -31,8 +29,54 @@ postScriptFileName = "PostProcessIR_v11.py"
 
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
+# Global variable decleration
+anglePan = 0 # Angle of pantilt Pan servo, range [-90,90]
+angleTilt = 0 # Angle of pantilt Titlt servo, range [-90,90]
+
 BUF_SIZE = 2
 q = Queue(BUF_SIZE)
+
+# Initialize pantilt modules
+def pantiltSetup():
+    # Global varables to be used
+    global anglePan
+    global angleTilt
+
+    # Enable pantilt servos
+    pantilthat.servo_enable(1, True)
+    pantilthat.servo_enable(2, True)
+
+    # Center pantilt camera
+    pantilthat.pan(anglePan)
+    pantilthat.tilt(angleTilt)
+
+    # Set up pantilt LED
+    pantilthat.light_type(pantilthat.RGBW)
+    pantilthat.light_mode(pantilthat.WS2812)
+    pantilthat.set_all(0,0,0,0)
+    pantilthat.show()
+
+# Definition of Warning and Restart dialog window
+class exitDialog(QDialog):
+    def __init__(self):
+        super(exitDialog.self).__init__()
+        uic.loadUi('exitDialog.ui', self)
+        self.exitButton.clicked.connect(self.exitProgram)
+
+    def exitProgram(self):
+        os.excel(sys.executable, os.path.abspath(__file__), *sys.argv) # Restart program
+
+# Definition of Servo Error dialog window
+class servoErrorWindow(QDialog):
+    def __int__(self):
+        super(servoErrorWindow, self).__init__()
+        uic.loadUi('testDialog.ui', self)
+
+# Definition of Camera Error dialog window
+class camErrorWindow(QDialog):
+    def __init__(self):
+        super(camErrorWindow, self).__init__()
+        uic.loadUi('camErrorWindow.ui', self)
 
 def py_frame_callback(frame, userptr):
     array_pointer = cast(frame.contents.data, POINTER(c_uint16 * (frame.contents.width * frame.contents.height)))
@@ -324,6 +368,9 @@ class App(QMainWindow, Ui_MainWindow):
 
     def initUI(self):
         global fileNamingFull
+        global anglePan
+        global angleTilt
+
         self.startRec.clicked.connect(self.startRec2)
         self.stopRec.clicked.connect(self.stopRecAndSave)
         self.startRec.clicked.connect(self.displayRec)
@@ -357,6 +404,17 @@ class App(QMainWindow, Ui_MainWindow):
         self.comboFFCmode.currentTextChanged.connect(self.FFCmodeFunction)
 
         #self.connect(self, SIGNAL('triggered()'), self.closeEvent)
+
+        # Implementation of pantilt controller's buttons
+        self.upButton.clicked.connect(self.moveUp)
+        self.downButton.clicked.connect(self.moveDown)
+        self.leftButton.clicked.connect(self.moveLeft)
+        self.rightButton.clicked.connect(self.moveRight)
+        self.LEDSlider.valueChanged.connect(self.LEDBrightness)
+
+        # Implementation of pantilt error resolution dialogs
+        self.servoerror.clicked.connect(self.servo_error)
+        self.camerror.clicked.connect(self.cam_error)
 
     def gainFunction(self):
         global devh
@@ -586,8 +644,61 @@ class App(QMainWindow, Ui_MainWindow):
             print('Exited Application')
             event.accept()
 
+    # Call dialog box for servo error
+    def servo_error(self):
+        self.servoerr = servoErrorWindow()  # Call servo error dialog box
+        self.servoerr.show()                # Display servo error dialog box
+
+    # Call dialog box for camera error
+    def cam_error(self):
+        self.camerr = camErrorWindow()  # Call camera error dialog box
+        self.camerr.show()              # Display camera error dialog box
+
+    # Pantilt controller tilt up
+    def moveUp(self):
+        # Global variable to be used
+        global angleTilt
+
+        if angleTilt > -90:             # Move only if current position is greater than servo lower bound
+            angleTilt -= 10             # Adjust tilt angle by 10 degrees
+            pantilthat.tilt(angleTilt)  # Update tilt servo position
+    
+    # Pantilt controller tilt down
+    def moveDown(self):
+        # Global variable to be used
+        global angleTilt
+
+        if angleTilt < 90:              # Move only if current position is less than servo upper bound
+            angleTilt += 10             # Adjust tilt angle by 10 degrees
+            pantilthat.tilt(angleTilt)  # Update tilt serv positon
+
+    # Pantilt controller pan left
+    def moveLeft(self):
+        # Global variable to be used
+        global anglePan
+
+        if anglePan < 90:               # Move only if current position is less than servo upper bound
+            anglePan += 10              # Adjust pan angle by 10 degrees
+            pantilthat.pan(anglePan)    # Update pan servo position
+
+    # Pantilt controller pan right
+    def moveRight(self):
+        # Global variable to be used
+        global anglePan
+
+        if anglePan > -90:              # Move only if current position is greater than servo upper bound
+            anglePan -= 10              # Adjust pan angle by 10 degrees
+            pantilthat.pan(anglePan)    # Update pan servo position
+
+    # Pantilt LED brightness adjustment
+    def LEDBrightness(self):
+        sV = self.LEDSlider.value()         # Store value of slider, range [0,255]
+        pantilthat.set_all(sV, sV, sV, sV)  # Set all LEDs to stored slider value
+        pantilthat.show()                   # Update LED bar values
+
 def main():
     app = QApplication(sys.argv)
+    pantiltSetup()                  # Initialize pantilt modules
     window = App()
     window.show()
     sys.exit(app.exec_())
