@@ -21,6 +21,9 @@ from multiprocessing  import Queue
 import threading
 from subprocess import call
 
+import pantilthat
+
+
 print('Loaded Packages and Starting IR Data...')
 
 qtCreatorFile = "ir_v11.ui"  # Enter file here.

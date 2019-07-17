@@ -172,7 +172,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_7.addWidget(self.filePathDisp)
         self.verticalLayout_3.addLayout(self.horizontalLayout_7)
         self.plainTextEdit = QtWidgets.QPlainTextEdit(self.centralwidget)
-        self.plainTextEdit.setObjectName("plainTextEdit")
+        self.plainTextEdit.setObjectName("plainTextEdit")       
         self.verticalLayout_3.addWidget(self.plainTextEdit)
         self.gridLayout.addLayout(self.verticalLayout_3, 2, 0, 1, 3)
         MainWindow.setCentralWidget(self.centralwidget)
