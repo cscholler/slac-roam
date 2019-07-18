@@ -406,8 +406,11 @@ class App(QMainWindow, Ui_MainWindow):
         #self.connect(self, SIGNAL('triggered()'), self.closeEvent)
 
         # Implementation of pantilt controller's buttons
+        _state = 0
         self.upButton.clicked.connect(self.moveUp)
+
         self.downButton.clicked.connect(self.moveDown)
+
         self.leftButton.clicked.connect(self.moveLeft)
         self.rightButton.clicked.connect(self.moveRight)
         self.LEDSlider.valueChanged.connect(self.LEDBrightness)
@@ -656,39 +659,43 @@ class App(QMainWindow, Ui_MainWindow):
 
     # Pantilt controller tilt up
     def moveUp(self):
-        # Global variable to be used
+       # Global variable to be used
         global angleTilt
 
-        if angleTilt > -90:             # Move only if current position is greater than servo lower bound
-            angleTilt -= 10             # Adjust tilt angle by 10 degrees
-            pantilthat.tilt(angleTilt)  # Update tilt servo position
-    
+        if self.upButton.isEnabled():       # Check if button is currently held down
+            if angleTilt > -90:             # Move only if current position is greater than servo lower bound
+                angleTilt -= 10             # Adjust tilt angle by 10 degrees
+                pantilthat.tilt(angleTilt)  # Update tilt servo position
+      
     # Pantilt controller tilt down
     def moveDown(self):
         # Global variable to be used
         global angleTilt
 
-        if angleTilt < 90:              # Move only if current position is less than servo upper bound
-            angleTilt += 10             # Adjust tilt angle by 10 degrees
-            pantilthat.tilt(angleTilt)  # Update tilt serv positon
+        if self.downButton.isEnabled():     # Check if button is currently held down
+            if angleTilt < 90:              # Move only if current position is less than servo upper bound
+                angleTilt += 10             # Adjust tilt angle by 10 degrees
+                pantilthat.tilt(angleTilt)  # Update tilt servo positon
 
     # Pantilt controller pan left
     def moveLeft(self):
         # Global variable to be used
         global anglePan
 
-        if anglePan < 90:               # Move only if current position is less than servo upper bound
-            anglePan += 10              # Adjust pan angle by 10 degrees
-            pantilthat.pan(anglePan)    # Update pan servo position
+        if self.leftButton.isEnabled():     # Check if button is currently held down
+            if anglePan < 90:               # Move only if current position is less than servo upper bound
+                anglePan += 10              # Adjust pan angle by 10 degrees
+                pantilthat.pan(anglePan)    # Update pan servo position
 
     # Pantilt controller pan right
     def moveRight(self):
         # Global variable to be used
         global anglePan
 
-        if anglePan > -90:              # Move only if current position is greater than servo upper bound
-            anglePan -= 10              # Adjust pan angle by 10 degrees
-            pantilthat.pan(anglePan)    # Update pan servo position
+        if self.rightButton.isEnabled():    # Check if button is currently held down
+            if anglePan > -90:              # Move only if current position is greater than servo upper bound
+                anglePan -= 10              # Adjust pan angle by 10 degrees
+                pantilthat.pan(anglePan)    # Update pan servo position
 
     # Pantilt LED brightness adjustment
     def LEDBrightness(self):
