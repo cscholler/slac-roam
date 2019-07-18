@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'ir_v11.ui'
+# Form implementation generated from reading ui file '/home/roamadmin/integration-testing/ir_v11.ui'
 #
 # Created by: PyQt5 UI code generator 5.10.1
 #
@@ -33,19 +33,33 @@ class Ui_MainWindow(object):
         self.pantiltcontroller.setObjectName("pantiltcontroller")
         self.LEDSlider = QtWidgets.QSlider(self.pantiltcontroller)
         self.LEDSlider.setGeometry(QtCore.QRect(20, 50, 311, 21))
+        self.LEDSlider.setMaximum(255)
         self.LEDSlider.setOrientation(QtCore.Qt.Horizontal)
         self.LEDSlider.setObjectName("LEDSlider")
         self.upButton = QtWidgets.QPushButton(self.pantiltcontroller)
         self.upButton.setGeometry(QtCore.QRect(130, 74, 89, 31))
+        self.upButton.setCheckable(False)
+        self.upButton.setAutoRepeat(True)
+        self.upButton.setAutoRepeatDelay(60)
+        self.upButton.setAutoRepeatInterval(60)
         self.upButton.setObjectName("upButton")
         self.downButton = QtWidgets.QPushButton(self.pantiltcontroller)
         self.downButton.setGeometry(QtCore.QRect(130, 134, 89, 31))
+        self.downButton.setAutoRepeat(True)
+        self.downButton.setAutoRepeatDelay(60)
+        self.downButton.setAutoRepeatInterval(60)
         self.downButton.setObjectName("downButton")
         self.rightButton = QtWidgets.QPushButton(self.pantiltcontroller)
         self.rightButton.setGeometry(QtCore.QRect(220, 104, 89, 31))
+        self.rightButton.setAutoRepeat(True)
+        self.rightButton.setAutoRepeatDelay(60)
+        self.rightButton.setAutoRepeatInterval(60)
         self.rightButton.setObjectName("rightButton")
         self.leftButton = QtWidgets.QPushButton(self.pantiltcontroller)
         self.leftButton.setGeometry(QtCore.QRect(40, 104, 89, 31))
+        self.leftButton.setAutoRepeat(True)
+        self.leftButton.setAutoRepeatDelay(60)
+        self.leftButton.setAutoRepeatInterval(60)
         self.leftButton.setObjectName("leftButton")
         self.adjustbrightness = QtWidgets.QLabel(self.pantiltcontroller)
         self.adjustbrightness.setGeometry(QtCore.QRect(0, 26, 355, 21))
@@ -326,14 +340,4 @@ class Ui_MainWindow(object):
         self.comboGain.setItemText(1, _translate("MainWindow", "LOW"))
         self.comboGain.setItemText(2, _translate("MainWindow", "AUTO"))
         self.vidBalance.setText(_translate("MainWindow", "IR                               Video Balance                     Webcam"))
-
-
-if __name__ == "__main__":
-    import sys
-    app = QtWidgets.QApplication(sys.argv)
-    MainWindow = QtWidgets.QMainWindow()
-    ui = Ui_MainWindow()
-    ui.setupUi(MainWindow)
-    MainWindow.show()
-    sys.exit(app.exec_())
 

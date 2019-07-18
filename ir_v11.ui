@@ -75,6 +75,18 @@
          <property name="text">
           <string>Up</string>
          </property>
+         <property name="checkable">
+          <bool>false</bool>
+         </property>
+         <property name="autoRepeat">
+          <bool>true</bool>
+         </property>
+         <property name="autoRepeatDelay">
+          <number>60</number>
+         </property>
+         <property name="autoRepeatInterval">
+          <number>60</number>
+         </property>
         </widget>
         <widget class="QPushButton" name="downButton">
          <property name="geometry">
@@ -87,6 +99,15 @@
          </property>
          <property name="text">
           <string>Down</string>
+         </property>
+         <property name="autoRepeat">
+          <bool>true</bool>
+         </property>
+         <property name="autoRepeatDelay">
+          <number>60</number>
+         </property>
+         <property name="autoRepeatInterval">
+          <number>60</number>
          </property>
         </widget>
         <widget class="QPushButton" name="rightButton">
@@ -101,6 +122,15 @@
          <property name="text">
           <string>Right</string>
          </property>
+         <property name="autoRepeat">
+          <bool>true</bool>
+         </property>
+         <property name="autoRepeatDelay">
+          <number>60</number>
+         </property>
+         <property name="autoRepeatInterval">
+          <number>60</number>
+         </property>
         </widget>
         <widget class="QPushButton" name="leftButton">
          <property name="geometry">
@@ -113,6 +143,15 @@
          </property>
          <property name="text">
           <string>Left</string>
+         </property>
+         <property name="autoRepeat">
+          <bool>true</bool>
+         </property>
+         <property name="autoRepeatDelay">
+          <number>60</number>
+         </property>
+         <property name="autoRepeatInterval">
+          <number>60</number>
          </property>
         </widget>
         <widget class="QLabel" name="adjustbrightness">
