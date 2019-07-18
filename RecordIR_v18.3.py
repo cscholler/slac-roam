@@ -393,7 +393,7 @@ class MyThread(QThread):
                 convertToQtFormat = QImage(image.data, image.shape[1], image.shape[0], step, QImage.Format_RGB888)
             
             elif onWebcam == False: 
-                convertToQtFormat = QImage(rgbImage.data, rgbImage.shape[1], rgbImage.shape[0], QImage.Format_RGB888)
+                convertToQtFormat = QImage(resizedIR.data, resizedIR.shape[1], resizedIR.shape[0], QImage.Format_RGB888)
 
             # p = convertToQtFormat.scaled(640, 480, Qt.KeepAspectRatio)
             self.changePixmap.emit(convertToQtFormat)
