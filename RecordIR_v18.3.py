@@ -343,6 +343,7 @@ class MyThread(QThread):
         self.cam.release()
     
     def getWebcam(self):
+        
         if not self.cam.isOpened():
             cam_error()
             self.cam.release()
