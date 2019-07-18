@@ -351,6 +351,8 @@ RGB = [640, 480]
 alpha = 5
 IR = [160, 120]
 GUI = [640, 480]
+
+
 class MyThread(QThread):
     changePixmap = pyqtSignal(QImage)
     
@@ -396,17 +398,24 @@ class MyThread(QThread):
 
         print('Start Stream')
         beta = 10 - alpha
-        print("trying to get the webcam to work")
         
-        try:
-            self.cam = cv2.VideoCapture(0)
-            print("Webcam at 0 works")
-        except:
-            print("Webcam at 0 does not work")
-        
+        print("Trying to open webcam ...")
+        # try:
+        #     self.cam = cv2.VideoCapture(0)
+        # except:
+        #     print("Webcam is NOT received.")
+        self.cam = cv2.VideoCapture(0)
+
+        if not self.cam.isOpened():
+            cam_error()
+            self.cam.release()
+            print("Cannot open webcam")
+        else:
+            print("Webcam opened!")
+
         while True:
             frame = getFrame()
-            framecam = self.getWebcam()
+            framecam = self.getWebcamFrame()
             rgbImage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             camImage = cv2.cvtColor(framecam, cv2.COLOR_BGR2RGB)
             
@@ -423,7 +432,7 @@ class MyThread(QThread):
             # print(self.wcam)	# Store cam2 width
             # print(self.hcam)
             # ===> The two images have the same size
-            image = cv2.addWeighted(resizedCam, (alpha*.1), resizedIR, (beta*.1), 0.0)	# Overlay camera feeds
+            image = cv2.addWeighted(resizedCam, (alpha*.1), resizedIR, (beta*.1), 0.0) #, ((resizedCam*alpha)+(resizedIR*beta)+10), -1)	# Overlay camera feeds
             h, w, channel = image.shape
             step = channel * w
             convertToQtFormat = QImage(image.data, image.shape[1], image.shape[0], step, QImage.Format_RGB888)
@@ -436,15 +445,10 @@ class MyThread(QThread):
 
         self.cam.release()
     
-    def getWebcam(self):
-        if not self.cam.isOpened():
-            cam_error()
-            self.cam.release()
-            # print("Cannot open webcam")
-        # else:
-        #     print("Opened")
+    def getWebcamFrame(self):
         ret, frameread = self.cam.read()
         return frameread
+    
         
 
 # Definition of Warning and Exit dialog window
@@ -536,9 +540,18 @@ class App(QMainWindow, Ui_MainWindow):
         self.rightButton.clicked.connect(self.moveRight)
         self.LEDSlider.valueChanged.connect(self.LEDBrightness)
 
+        # Implementation of overlay balancer
+        self.balancer.valueChanged.connect(self.opacityValue)
+
         # Implementation of pantilt error resolution dialogs
         self.servoerror.clicked.connect(self.servo_error)
         self.camerror.clicked.connect(self.cam_error)
+
+    # Overlay opacity adjustment					
+    def opacityValue(self):
+        # Global variables to be used
+        global alpha
+        alpha = self.balancer.value()
 
     def gainFunction(self):
         global devh
