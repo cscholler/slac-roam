@@ -7,6 +7,9 @@ print('Successful import of uic') #often reinstallation of PyQt5 is required
 from PyQt5.QtCore import (QCoreApplication, QThread, QThreadPool, pyqtSignal, pyqtSlot, Qt, QTimer, QDateTime)
 from PyQt5.QtGui import (QImage, QPixmap, QTextCursor)
 from PyQt5.QtWidgets import (QWidget, QMainWindow, QApplication, QLabel, QPushButton, QVBoxLayout, QGridLayout, QSizePolicy, QMessageBox, QFileDialog, QSlider, QComboBox, QProgressDialog)
+from PyQt5.QtWidgets import QInputDialog, QDialog, QLineEdit
+# from PyQt5.QtGui import *
+# from PyQt5.QtCore import *
 
 import sys
 import os.path
@@ -19,6 +22,7 @@ import psutil
 from uvctypesParabilis_v2 import *
 from multiprocessing  import Queue
 import threading
+import pantilthat
 from subprocess import call
 
 print('Loaded Packages and Starting IR Data...')
@@ -28,8 +32,54 @@ postScriptFileName = "PostProcessIR_v11.py"
 
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
+# Global variable decleration
+anglePan = 0 # Angle of pantilt Pan servo, range [-90,90]
+angleTilt = 0 # Angle of pantilt Titlt servo, range [-90,90]
+
 BUF_SIZE = 2
 q = Queue(BUF_SIZE)
+
+# Initialize pantilt modules
+def pantiltSetup():
+    # Global varables to be used
+    global anglePan
+    global angleTilt
+
+    # Enable pantilt servos
+    pantilthat.servo_enable(1, True)
+    pantilthat.servo_enable(2, True)
+
+    # Center pantilt camera
+    pantilthat.pan(anglePan)
+    pantilthat.tilt(angleTilt)
+
+    # Set up pantilt LED
+    pantilthat.light_type(pantilthat.RGBW)
+    pantilthat.light_mode(pantilthat.WS2812)
+    pantilthat.set_all(0,0,0,0)
+    pantilthat.show()
+
+# Definition of Warning and Restart dialog window
+class exitDialog(QDialog):
+    def __init__(self):
+        super(exitDialog.self).__init__()
+        uic.loadUi('exitDialog.ui', self)
+        self.exitButton.clicked.connect(self.exitProgram)
+
+    def exitProgram(self):
+        os.excel(sys.executable, os.path.abspath(__file__), *sys.argv) # Restart program
+
+# Definition of Servo Error dialog window
+class servoErrorWindow(QDialog):
+    def __init__(self):
+        super(servoErrorWindow, self).__init__()
+        uic.loadUi('servoErrorWindow.ui', self)
+
+# Definition of Camera Error dialog window
+class camErrorWindow(QDialog):
+    def __init__(self):
+        super(camErrorWindow, self).__init__()
+        uic.loadUi('camErrorWindow.ui', self)
 
 def py_frame_callback(frame, userptr):
     array_pointer = cast(frame.contents.data, POINTER(c_uint16 * (frame.contents.width * frame.contents.height)))
@@ -126,59 +176,65 @@ def generate_colour_map():
 
     return lut
 
+
+def cam_error():
+		camerr = camErrorWindow()	# Call camera error dialog box
+		camerr.show()	
+
 def startStream():
-  global devh
-  ctx = POINTER(uvc_context)()
-  dev = POINTER(uvc_device)()
-  devh = POINTER(uvc_device_handle)()
-  ctrl = uvc_stream_ctrl()
+    global devh
 
-  res = libuvc.uvc_init(byref(ctx), 0)
-  if res < 0:
-    print("uvc_init error")
-    #exit(1)
+    ctx = POINTER(uvc_context)()
+    dev = POINTER(uvc_device)()
+    devh = POINTER(uvc_device_handle)()
+    ctrl = uvc_stream_ctrl()
 
-  try:
-    res = libuvc.uvc_find_device(ctx, byref(dev), PT_USB_VID, PT_USB_PID, 0)
+    res = libuvc.uvc_init(byref(ctx), 0)
     if res < 0:
-      print("uvc_find_device error")
-      exit(1)
+        print("uvc_init error")
+        #exit(1)
 
     try:
-      res = libuvc.uvc_open(dev, byref(devh))
-      if res < 0:
-        print("uvc_open error")
-        exit(1)
+        res = libuvc.uvc_find_device(ctx, byref(dev), PT_USB_VID, PT_USB_PID, 0)
+        if res < 0:
+            print("uvc_find_device error")
+            exit(1)
 
-      print("device opened!")
+        try:
+            res = libuvc.uvc_open(dev, byref(devh))
+            if res < 0:
+                print("uvc_open error")
+                exit(1)
 
-      print_device_info(devh)
-      print_device_formats(devh)
+            print("device opened!")
 
-      frame_formats = uvc_get_frame_formats_by_guid(devh, VS_FMT_GUID_Y16)
-      if len(frame_formats) == 0:
-        print("device does not support Y16")
-        exit(1)
+            print_device_info(devh)
+            print_device_formats(devh)
 
-      libuvc.uvc_get_stream_ctrl_format_size(devh, byref(ctrl), UVC_FRAME_FORMAT_Y16,
-        frame_formats[0].wWidth, frame_formats[0].wHeight, int(1e7 / frame_formats[0].dwDefaultFrameInterval)
-      )
+            frame_formats = uvc_get_frame_formats_by_guid(devh, VS_FMT_GUID_Y16)
+            if len(frame_formats) == 0:
+                print("device does not support Y16")
+                exit(1)
 
-      res = libuvc.uvc_start_streaming(devh, byref(ctrl), PTR_PY_FRAME_CALLBACK, None, 0)
-      if res < 0:
-        print("uvc_start_streaming failed: {0}".format(res))
-        exit(1)
+            libuvc.uvc_get_stream_ctrl_format_size(devh, byref(ctrl), UVC_FRAME_FORMAT_Y16,
+                frame_formats[0].wWidth, frame_formats[0].wHeight, int(1e7 / frame_formats[0].dwDefaultFrameInterval)
+            )
 
-      print("done")
-      print_shutter_info(devh)
+            res = libuvc.uvc_start_streaming(devh, byref(ctrl), PTR_PY_FRAME_CALLBACK, None, 0)
+            if res < 0:
+                print("uvc_start_streaming failed: {0}".format(res))
+                exit(1)
 
+            print("done")
+            print_shutter_info(devh)
+
+        except:
+            #libuvc.uvc_unref_device(dev)
+            print('Failed to Open Device')
     except:
-      #libuvc.uvc_unref_device(dev)
-      print('Failed to Open Device')
-  except:
-    #libuvc.uvc_exit(ctx)
-    print('Failed to Find Device')
-    exit(1)
+        #libuvc.uvc_exit(ctx)
+        print('Failed to Find Device')
+        exit(1)
 
 toggleUnitState = 'F'
 
@@ -291,18 +347,75 @@ def updateMaxTempLabel():
     else:
         print('No Units Selected')
 
+alpha = 5
+beta = 5
 class MyThread(QThread):
     changePixmap = pyqtSignal(QImage)
-
+    
     def run(self):
+        global alpha
+        global beta
+        global RGB
+        global GUI
+        global IR
+
         print('Start Stream')
+        
+        onWebcam = False
+        print("Trying to open webcam ...")
+    
+        self.cam = cv2.VideoCapture(0)
+
+        if not self.cam.isOpened():
+            self.cam.release()
+            print("Cannot open webcam")
+            print("Showing the thermal camera only ...")
+            onWebcam = False
+        else:
+            print("Webcam opened!")
+            print("Showing both cameras ...")
+            onWebcam = True
+
         while True:
             frame = getFrame()
             rgbImage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            convertToQtFormat = QImage(rgbImage.data, rgbImage.shape[1], rgbImage.shape[0], QImage.Format_RGB888)
-            p = convertToQtFormat.scaled(640, 480, Qt.KeepAspectRatio)
-            self.changePixmap.emit(p)
+            resizedIR = cv2.resize(rgbImage, (640, 480))
 
+            if onWebcam == True:
+                framecam = self.getWebcamFrame()
+                camImage = cv2.cvtColor(framecam, cv2.COLOR_BGR2RGB)
+                resizedCam = cv2.resize(camImage, (640, 480))
+
+                image = cv2.addWeighted(resizedCam, (alpha*.1), resizedIR, (beta*.1), 0.0)	# Overlay camera feeds
+
+                h, w, channel = image.shape
+                step = channel * w
+                convertToQtFormat = QImage(image.data, image.shape[1], image.shape[0], step, QImage.Format_RGB888)
+            
+            elif onWebcam == False: 
+                convertToQtFormat = QImage(rgbImage.data, rgbImage.shape[1], rgbImage.shape[0], QImage.Format_RGB888)
+
+            # p = convertToQtFormat.scaled(640, 480, Qt.KeepAspectRatio)
+            self.changePixmap.emit(convertToQtFormat)
+
+        self.cam.release()
+    
+    def getWebcamFrame(self):
+        ret, frameread = self.cam.read()
+        return frameread
+
+# Definition of Servo Error dialog window
+class servoErrorWindow(QDialog):
+	def __init__(self):
+		super(servoErrorWindow,self).__init__()
+		uic.loadUi('servoErrorWindow.ui',self)
+
+# Definition of Camera Error dialog window
+class camErrorWindow(QDialog):
+    def __init__(self):
+        super(camErrorWindow,self).__init__()
+        uic.loadUi('camErrorWindow.ui',self)
+        
 thread = "unactive"
 saveFilePath = ""
 fileNamingFull = ""
@@ -321,6 +434,9 @@ class App(QMainWindow, Ui_MainWindow):
 
     def initUI(self):
         global fileNamingFull
+        global anglePan
+        global angleTilt
+
         self.startRec.clicked.connect(self.startRec2)
         self.stopRec.clicked.connect(self.stopRecAndSave)
         self.startRec.clicked.connect(self.displayRec)
@@ -354,6 +470,31 @@ class App(QMainWindow, Ui_MainWindow):
         self.comboFFCmode.currentTextChanged.connect(self.FFCmodeFunction)
 
         #self.connect(self, SIGNAL('triggered()'), self.closeEvent)
+
+        # Implementation of pantilt controller's buttons
+        _state = 0
+        self.upButton.clicked.connect(self.moveUp)
+
+        self.downButton.clicked.connect(self.moveDown)
+
+        self.leftButton.clicked.connect(self.moveLeft)
+        self.rightButton.clicked.connect(self.moveRight)
+        self.LEDSlider.valueChanged.connect(self.LEDBrightness)
+
+        # Implementation of overlay balancer
+        self.balancer.valueChanged.connect(self.opacityValue)
+
+        # Implementation of pantilt error resolution dialogs
+        self.servoerror.clicked.connect(self.servo_error)
+        self.camerror.clicked.connect(self.cam_error)
+
+    # Overlay opacity adjustment					
+    def opacityValue(self):
+        # Global variables to be used
+        global alpha
+        global beta
+        alpha = self.balancer.value()
+        beta = 10 - alpha
 
     def gainFunction(self):
         global devh
@@ -583,8 +724,65 @@ class App(QMainWindow, Ui_MainWindow):
             print('Exited Application')
             event.accept()
 
+    # Call dialog box for servo error
+    def servo_error(self):
+        self.servoerr = servoErrorWindow()  # Call servo error dialog box
+        self.servoerr.show()                # Display servo error dialog box
+
+    # Call dialog box for camera error
+    def cam_error(self):
+        self.camerr = camErrorWindow()  # Call camera error dialog box
+        self.camerr.show()              # Display camera error dialog box
+
+    # Pantilt controller tilt up
+    def moveUp(self):
+       # Global variable to be used
+        global angleTilt
+
+        if self.upButton.isEnabled():       # Check if button is currently held down
+            if angleTilt > -90:             # Move only if current position is greater than servo lower bound
+                angleTilt -= 10             # Adjust tilt angle by 10 degrees
+                pantilthat.tilt(angleTilt)  # Update tilt servo position
+      
+    # Pantilt controller tilt down
+    def moveDown(self):
+        # Global variable to be used
+        global angleTilt
+
+        if self.downButton.isEnabled():     # Check if button is currently held down
+            if angleTilt < 90:              # Move only if current position is less than servo upper bound
+                angleTilt += 10             # Adjust tilt angle by 10 degrees
+                pantilthat.tilt(angleTilt)  # Update tilt servo positon
+
+    # Pantilt controller pan left
+    def moveLeft(self):
+        # Global variable to be used
+        global anglePan
+
+        if self.leftButton.isEnabled():     # Check if button is currently held down
+            if anglePan < 90:               # Move only if current position is less than servo upper bound
+                anglePan += 10              # Adjust pan angle by 10 degrees
+                pantilthat.pan(anglePan)    # Update pan servo position
+
+    # Pantilt controller pan right
+    def moveRight(self):
+        # Global variable to be used
+        global anglePan
+
+        if self.rightButton.isEnabled():    # Check if button is currently held down
+            if anglePan > -90:              # Move only if current position is greater than servo upper bound
+                anglePan -= 10              # Adjust pan angle by 10 degrees
+                pantilthat.pan(anglePan)    # Update pan servo position
+
+    # Pantilt LED brightness adjustment
+    def LEDBrightness(self):
+        sV = self.LEDSlider.value()         # Store value of slider, range [0,255]
+        pantilthat.set_all(sV, sV, sV, sV)  # Set all LEDs to stored slider value
+        pantilthat.show()                   # Update LED bar values
+
 def main():
     app = QApplication(sys.argv)
+    pantiltSetup()                  # Initialize pantilt modules
     window = App()
     window.show()
     sys.exit(app.exec_())
