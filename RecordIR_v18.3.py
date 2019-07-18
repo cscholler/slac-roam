@@ -68,9 +68,9 @@ class exitDialog(QDialog):
 
 # Definition of Servo Error dialog window
 class servoErrorWindow(QDialog):
-    def __int__(self):
+    def __init__(self):
         super(servoErrorWindow, self).__init__()
-        uic.loadUi('testDialog.ui', self)
+        uic.loadUi('servoErrorWindow.ui', self)
 
 # Definition of Camera Error dialog window
 class camErrorWindow(QDialog):
