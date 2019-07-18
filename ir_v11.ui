@@ -81,6 +81,12 @@
          <property name="autoRepeat">
           <bool>true</bool>
          </property>
+         <property name="autoRepeatDelay">
+          <number>60</number>
+         </property>
+         <property name="autoRepeatInterval">
+          <number>60</number>
+         </property>
         </widget>
         <widget class="QPushButton" name="downButton">
          <property name="geometry">
@@ -96,6 +102,12 @@
          </property>
          <property name="autoRepeat">
           <bool>true</bool>
+         </property>
+         <property name="autoRepeatDelay">
+          <number>60</number>
+         </property>
+         <property name="autoRepeatInterval">
+          <number>60</number>
          </property>
         </widget>
         <widget class="QPushButton" name="rightButton">
@@ -113,6 +125,12 @@
          <property name="autoRepeat">
           <bool>true</bool>
          </property>
+         <property name="autoRepeatDelay">
+          <number>60</number>
+         </property>
+         <property name="autoRepeatInterval">
+          <number>60</number>
+         </property>
         </widget>
         <widget class="QPushButton" name="leftButton">
          <property name="geometry">
@@ -128,6 +146,12 @@
          </property>
          <property name="autoRepeat">
           <bool>true</bool>
+         </property>
+         <property name="autoRepeatDelay">
+          <number>60</number>
+         </property>
+         <property name="autoRepeatInterval">
+          <number>60</number>
          </property>
         </widget>
         <widget class="QLabel" name="adjustbrightness">
