@@ -7,6 +7,9 @@ print('Successful import of uic') #often reinstallation of PyQt5 is required
 from PyQt5.QtCore import (QCoreApplication, QThread, QThreadPool, pyqtSignal, pyqtSlot, Qt, QTimer, QDateTime)
 from PyQt5.QtGui import (QImage, QPixmap, QTextCursor)
 from PyQt5.QtWidgets import (QWidget, QMainWindow, QApplication, QLabel, QPushButton, QVBoxLayout, QGridLayout, QSizePolicy, QMessageBox, QFileDialog, QSlider, QComboBox, QProgressDialog)
+from PyQt5.QtWidgets import QInputDialog, QDialog, QLineEdit
+# from PyQt5.QtGui import *
+# from PyQt5.QtCore import *
 
 import sys
 import os.path
@@ -129,59 +132,75 @@ def generate_colour_map():
 
     return lut
 
+
+def cam_error():
+		camerr = camErrorWindow()	# Call camera error dialog box
+		camerr.show()	
+
 def startStream():
-  global devh
-  ctx = POINTER(uvc_context)()
-  dev = POINTER(uvc_device)()
-  devh = POINTER(uvc_device_handle)()
-  ctrl = uvc_stream_ctrl()
+    global devh
 
-  res = libuvc.uvc_init(byref(ctx), 0)
-  if res < 0:
-    print("uvc_init error")
-    #exit(1)
+    # try:
+    #     cam = cv2.VideoCapture(0)
+    # except:
+    #     cam = cv2.VideoCapture(1)
 
-  try:
-    res = libuvc.uvc_find_device(ctx, byref(dev), PT_USB_VID, PT_USB_PID, 0)
+    # if not cam.isOpened():
+    #     cam_error()
+    #     cam.release()
+    #     print("Cannot open webcam")
+
+    ctx = POINTER(uvc_context)()
+    dev = POINTER(uvc_device)()
+    devh = POINTER(uvc_device_handle)()
+    ctrl = uvc_stream_ctrl()
+
+    res = libuvc.uvc_init(byref(ctx), 0)
     if res < 0:
-      print("uvc_find_device error")
-      exit(1)
+        print("uvc_init error")
+        #exit(1)
 
     try:
-      res = libuvc.uvc_open(dev, byref(devh))
-      if res < 0:
-        print("uvc_open error")
-        exit(1)
+        res = libuvc.uvc_find_device(ctx, byref(dev), PT_USB_VID, PT_USB_PID, 0)
+        if res < 0:
+            print("uvc_find_device error")
+            exit(1)
 
-      print("device opened!")
+        try:
+            res = libuvc.uvc_open(dev, byref(devh))
+            if res < 0:
+                print("uvc_open error")
+                exit(1)
 
-      print_device_info(devh)
-      print_device_formats(devh)
+            print("device opened!")
 
-      frame_formats = uvc_get_frame_formats_by_guid(devh, VS_FMT_GUID_Y16)
-      if len(frame_formats) == 0:
-        print("device does not support Y16")
-        exit(1)
+            print_device_info(devh)
+            print_device_formats(devh)
 
-      libuvc.uvc_get_stream_ctrl_format_size(devh, byref(ctrl), UVC_FRAME_FORMAT_Y16,
-        frame_formats[0].wWidth, frame_formats[0].wHeight, int(1e7 / frame_formats[0].dwDefaultFrameInterval)
-      )
+            frame_formats = uvc_get_frame_formats_by_guid(devh, VS_FMT_GUID_Y16)
+            if len(frame_formats) == 0:
+                print("device does not support Y16")
+                exit(1)
 
-      res = libuvc.uvc_start_streaming(devh, byref(ctrl), PTR_PY_FRAME_CALLBACK, None, 0)
-      if res < 0:
-        print("uvc_start_streaming failed: {0}".format(res))
-        exit(1)
+            libuvc.uvc_get_stream_ctrl_format_size(devh, byref(ctrl), UVC_FRAME_FORMAT_Y16,
+                frame_formats[0].wWidth, frame_formats[0].wHeight, int(1e7 / frame_formats[0].dwDefaultFrameInterval)
+            )
 
-      print("done")
-      print_shutter_info(devh)
+            res = libuvc.uvc_start_streaming(devh, byref(ctrl), PTR_PY_FRAME_CALLBACK, None, 0)
+            if res < 0:
+                print("uvc_start_streaming failed: {0}".format(res))
+                exit(1)
 
+            print("done")
+            print_shutter_info(devh)
+
+        except:
+            #libuvc.uvc_unref_device(dev)
+            print('Failed to Open Device')
     except:
-      #libuvc.uvc_unref_device(dev)
-      print('Failed to Open Device')
-  except:
-    #libuvc.uvc_exit(ctx)
-    print('Failed to Find Device')
-    exit(1)
+        #libuvc.uvc_exit(ctx)
+        print('Failed to Find Device')
+        exit(1)
 
 toggleUnitState = 'F'
 
@@ -294,18 +313,70 @@ def updateMaxTempLabel():
     else:
         print('No Units Selected')
 
+
+alpha = 5
 class MyThread(QThread):
     changePixmap = pyqtSignal(QImage)
-
+    
     def run(self):
+        global alpha
         print('Start Stream')
+        beta = 10 - alpha
+        # print("trying to get the webcam to work")
+        try:
+            self.cam = cv2.VideoCapture(4)
+        except:
+            print("4 does not work")
+        
         while True:
             frame = getFrame()
+            framecam = self.getWebcam()
             rgbImage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            convertToQtFormat = QImage(rgbImage.data, rgbImage.shape[1], rgbImage.shape[0], QImage.Format_RGB888)
+            camImage = cv2.cvtColor(framecam, cv2.COLOR_BGR2RGB)
+            # image = cv2.addWeighted(camImage, (alpha*.1), rgbImage, (beta*.1), 0.0)	# Overlay camera feeds
+            # convertToQtFormat = QImage(image.data, image.shape[1], image.shape[0], QImage.Format_RGB888)
+            # convertToQtFormat = QImage(rgbImage.data, rgbImage.shape[1], rgbImage.shape[0], QImage.Format_RGB888)
+            convertToQtFormat = QImage(camImage.data, camImage.shape[1], camImage.shape[0], QImage.Format_RGB888)
             p = convertToQtFormat.scaled(640, 480, Qt.KeepAspectRatio)
             self.changePixmap.emit(p)
 
+        self.cam.release()
+    
+    def getWebcam(self):
+        if not self.cam.isOpened():
+            cam_error()
+            self.cam.release()
+            print("Cannot open webcam")
+        else:
+            print("Opened")
+        ret, frameread = self.cam.read()
+        return frameread
+        
+
+# Definition of Warning and Exit dialog window
+class exitDialog(QDialog):
+    def __init__(self):
+        super(exitDialog,self).__init__()
+        uic.loadUi('exitDialog.ui',self)
+        self.exitButton.clicked.connect(self.exitProgram)
+
+    def exitProgram(self):
+        os.execl(sys.executable, os.path.abspath(__file__), *sys.argv) #restart
+        # print("Program closed.")
+        # exit()
+
+# Definition of Servo Error dialog window
+class servoErrorWindow(QDialog):
+	def __init__(self):
+		super(servoErrorWindow,self).__init__()
+		uic.loadUi('servowindow.ui',self)
+
+# Definition of Camera Wrror dialog window
+class camErrorWindow(QDialog):
+    def __init__(self):
+        super(camErrorWindow,self).__init__()
+        uic.loadUi('camerrorwindow.ui',self)
+        
 thread = "unactive"
 saveFilePath = ""
 fileNamingFull = ""
