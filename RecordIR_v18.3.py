@@ -368,7 +368,7 @@ class MyThread(QThread):
         beta = 10 - alpha
         # print("trying to get the webcam to work")
         try:
-            self.cam = cv2.VideoCapture(4)
+            self.cam = cv2.VideoCapture(5)
         except:
             print("4 does not work")
         
@@ -414,13 +414,13 @@ class exitDialog(QDialog):
 class servoErrorWindow(QDialog):
 	def __init__(self):
 		super(servoErrorWindow,self).__init__()
-		uic.loadUi('servowindow.ui',self)
+		uic.loadUi('servoErrorWindow.ui',self)
 
 # Definition of Camera Wrror dialog window
 class camErrorWindow(QDialog):
     def __init__(self):
         super(camErrorWindow,self).__init__()
-        uic.loadUi('camerrorwindow.ui',self)
+        uic.loadUi('camErrorWindow.ui',self)
         
 thread = "unactive"
 saveFilePath = ""
