@@ -333,6 +333,7 @@ saveFilePath = ""
 fileNamingFull = ""
 bFile = ""
 class App(QMainWindow, Ui_MainWindow):
+    # Setting up the UI of the main window
     def __init__(self):
         QMainWindow.__init__(self)
         Ui_MainWindow.__init__(self)
@@ -340,15 +341,19 @@ class App(QMainWindow, Ui_MainWindow):
         self.initUI()
         print('Always Run This Script as ADMIN')
 
+    # Putting the "image" (the overlay image of two webcams) into the UI frame
     @pyqtSlot(QImage)
     def setImage(self, image):
         self.displayFrame.setPixmap(QPixmap.fromImage(image))
 
+    # Setting up the UI components
     def initUI(self):
-        global fileNamingFull
+        # Using global keyword to modify the following variables that were created outside of the function
+        global fileNamingFull   
         global anglePan
         global angleTilt
 
+        # Connecting the buttons to their assigned functions
         self.startRec.clicked.connect(self.startRec2)
         self.stopRec.clicked.connect(self.stopRecAndSave)
         self.startRec.clicked.connect(self.displayRec)
@@ -373,22 +378,23 @@ class App(QMainWindow, Ui_MainWindow):
         self.timer.start()
         self.timerFast.start()
 
+        # Naming video file
         defaultName = 'IR_HDF5'
         fileNamingFull = defaultName
+
+        # Allowing user to name the video
         self.lineEdit.setText(defaultName)
         self.lineEdit.textChanged.connect(self.fileNaming)
+
+        # FFC Mode and Set Gain State
         self.ffcBut.clicked.connect(self.ffcFunction)
         self.comboGain.currentTextChanged.connect(self.gainFunction)
         self.comboFFCmode.currentTextChanged.connect(self.FFCmodeFunction)
 
-        #self.connect(self, SIGNAL('triggered()'), self.closeEvent)
-
         # Implementation of pantilt controller's buttons
-        _state = 0
+        # _state = 0
         self.upButton.clicked.connect(self.moveUp)
-
         self.downButton.clicked.connect(self.moveDown)
-
         self.leftButton.clicked.connect(self.moveLeft)
         self.rightButton.clicked.connect(self.moveRight)
         self.LEDSlider.valueChanged.connect(self.LEDBrightness)
@@ -408,6 +414,7 @@ class App(QMainWindow, Ui_MainWindow):
         alpha = self.balancer.value()
         beta = 10 - alpha
 
+    # Function for the Set Gain State button
     def gainFunction(self):
         global devh
         global thread
@@ -421,6 +428,7 @@ class App(QMainWindow, Ui_MainWindow):
                 set_gain_auto(devh)
                 #print('Cannot set to AUTO')
 
+    # Setting text and functionality of the FFC Mode
     def FFCmodeFunction(self):
         global devh
         global thread
@@ -434,49 +442,63 @@ class App(QMainWindow, Ui_MainWindow):
                 #print('Cannot set to back to AUTO yet. Unplug USB from Raspberry Pi to reset lepton.')
         print_shutter_info(devh)
 
+    # Enable the FFC Mode
     def ffcFunction(self):
         global devh
         global thread
         if thread == 'active':
             perform_manual_ffc(devh)
 
+    # Setting up how the video will be saved and its filename
     def startRec2(self):
-    	global thread
-    	global camState
-    	global saveFilePath
-    	global fileNamingFull
-    	if thread == 'active':
-    		if camState == 'recording':
-    			print('Already Recording')
-    		else:
-    			if fileNamingFull != "":
-    				dateAndTime = str(QDateTime.currentDateTime().toString())
-    				dateAndTime = dateAndTime.replace(" ", "_")
-    				dateAndTime = dateAndTime.replace(":", "-")
-    				filePathAndName = str(fileNamingFull + '_' + dateAndTime + '.HDF5')
-    				print(filePathAndName)
-    				self.filePathDisp.setText(filePathAndName)
-    				try:
-    					startRec.hdf5_file = h5py.File(filePathAndName, mode='w')
-    					camState = 'recording'
-    					print('Started Recording')
-    					if saveFilePath == "":
-    						self.history.insertPlainText('Saved ' + str(filePathAndName) + ' to ' + os.path.dirname(os.path.abspath(__file__)) + '\n')
-    						self.history.moveCursor(QTextCursor.End)
-    					else:
-    						self.history.insertPlainText('Saved to ' + str(filePathAndName) + '\n')
-    						self.history.moveCursor(QTextCursor.End)
-    				except:
-    					print('Incorrect File Path')
-    					camState = 'not_recording'
-    					print('Did Not Begin Recording')
-    			else:
-    				print('No FileName Specified')
-    	else:
-    		print('Remember to Start Stream')
-    		self.history.insertPlainText('Remember to Start Stream\n')
-    		self.history.moveCursor(QTextCursor.End)
+        global thread
+        global camState
+        global saveFilePath
+        global fileNamingFull
+        # Saving the video happens only when the thread is active
+        if thread == 'active':
+            if camState == 'recording': # No action needed when recording
+                print('Already Recording') 
+            else:
+                # If the video's name is empty
+                if fileNamingFull != "":
+                    # Setting up file's path and ready to be named
+                    dateAndTime = str(QDateTime.currentDateTime().toString())
+                    dateAndTime = dateAndTime.replace(" ", "_")
+                    dateAndTime = dateAndTime.replace(":", "-")
+                    filePathAndName = str(fileNamingFull + '_' + dateAndTime + '.HDF5')
+                    print(filePathAndName)
+                    self.filePathDisp.setText(filePathAndName)
 
+                    # Starts generating the filename when being recorded based on the current time
+                    try:
+                        # Specifying a filepath for the video when starting to record
+                        startRec.hdf5_file = h5py.File(filePathAndName, mode='w')
+                        camState = 'recording'
+                        print('Started Recording')
+                        if saveFilePath == "":
+                            self.history.insertPlainText('Saved ' + str(filePathAndName) + ' to ' + os.path.dirname(os.path.abspath(__file__)) + '\n')
+                            self.history.moveCursor(QTextCursor.End)
+                        else:
+                            self.history.insertPlainText('Saved to ' + str(filePathAndName) + '\n')
+                            self.history.moveCursor(QTextCursor.End)
+
+                    # If the file path is invalid, the recording fails
+                    except:
+                        print('Incorrect File Path')
+                        camState = 'not_recording'
+                        print('Did Not Begin Recording')
+
+                # The video is not named if not recording
+                else:
+                    print('No FileName Specified')
+        # If the thread is not active, user will need to open camera in order to record
+        else:
+            print('Remember to Start Stream')
+            self.history.insertPlainText('Remember to Start Stream\n')
+            self.history.moveCursor(QTextCursor.End)
+
+    # Saving file after recording
     def stopRecAndSave(self):
     	global fileNum
     	global tiff_frame
@@ -486,18 +508,20 @@ class App(QMainWindow, Ui_MainWindow):
     		print('Ended Recording')
     		camState = 'not_recording'
     		try:
+                # Ending the recording
     		    startRec.hdf5_file.close()
     		    print('Saved Content to File Directory')
-    		    #fileNum += 1
     		except:
     		    print('Save Failed')
     		tiff_frame = 1
     	else:
+            # Reminding user to start recording to save the video
     		camState = 'not_recording'
     		print('Dont Forget to Start Recording')
     		self.history.insertPlainText('Dont Forget to Start Recording\n')
     		self.history.moveCursor(QTextCursor.End)
 
+    # Naming the file
     def fileNaming(self):
     	global fileNamingFull
     	bFile = str(self.lineEdit.text())
@@ -510,31 +534,38 @@ class App(QMainWindow, Ui_MainWindow):
     	else:
     		print('I am Confused')
 
+    # Starts streaming the cameras
     def startThread(self):
-    	global thread
-    	try:
-    		if thread == "unactive":
-    			try:
-    				startStream()
-    				self.th = MyThread()
-    				self.th.changePixmap.connect(self.setImage)
-    				self.th.start()
-    				thread = "active"
-    				print('Starting Thread')
-    			except:
-    				print('Failed!!!!')
-    				exit(1)
-    		else:
-    			print('Already Started Camera')
-    	except:
-    		msgBox = QMessageBox()
-    		reply = msgBox.question(self, 'Message', "Error Starting Camera - Plug or Re-Plug Camera into Computer, Wait at Least 10 Seconds, then Click Ok and Try Again.", QMessageBox.Ok)
-    		print('Message Box Displayed')
-    		if reply == QMessageBox.Ok:
-    			print('Ok Clicked')
-    		else:
-    			event.ignore()
+        global thread
+        try:
+            # if cameras are not on
+            if thread == "unactive":
+                # Tries opening the cameras and streaming
+                try:
+                    startStream()                                   # Finding and opening the thermal camera
+                    self.th = MyThread()                            # Calling the MyThread class which opens the webcam and puts the two cameras' frames into images
+                    self.th.changePixmap.connect(self.setImage)     # Putting the overlay image into the UI frame by connecting it with the setImage function
+                    self.th.start()                                 # Starts showing the image
+                    thread = "active"                               # Thread status changed
+                    print('Starting Thread')
+                # If cannot open device, streaming fails
+                except:
+                    print('Failed!!!!')
+                    exit(1)
+            else:
+                print('Already Started Camera')
+    	# If cannot open cameras, show a message box informing the unavailability
+        except:
+            msgBox = QMessageBox()
+            reply = msgBox.question(self, 'Message', "Error Starting Camera - Plug or Re-Plug Camera into Computer, Wait at Least 10 Seconds, then Click Ok and Try Again.", QMessageBox.Ok)
+            print('Message Box Displayed') 
+            # If user clicks ok confirming
+            if reply == QMessageBox.Ok:
+                print('Ok Clicked')
+            else:
+                event.ignore()
 
+    # Running the Post Process file
     def runPostScript(self):
     	try:
     		def thread_second():
@@ -544,94 +575,109 @@ class App(QMainWindow, Ui_MainWindow):
     	except:
     		print('Post Processing Script Error - Most Likely Referencing Incorrect File Name')
 
+    # Displaying the temperature in Celsius
     def dispCDef(self):
     	global toggleUnitState
     	toggleUnitState = 'C'
     	self.history.insertPlainText('Display ' + str(toggleUnitState) + '\n')
     	self.history.moveCursor(QTextCursor.End)
 
+    # Displaying the temperature in Fahrenheit
     def dispFDef(self):
     	global toggleUnitState
     	toggleUnitState = 'F'
     	self.history.insertPlainText('Display ' + str(toggleUnitState) + '\n')
     	self.history.moveCursor(QTextCursor.End)
 
+    # Displaying the maximum temperature and the minimum temperature
     def displayTempValues(self):
-        #global fileSelected
         global toggleUnitState
-        #if fileSelected != "":
         self.maxTempLabel.setText('Current Max Temp: ' + readTemp(toggleUnitState, 'max'))
-        #self.maxTempLocLabel.setText('Max Temp Loc: ' + str(maxLoc))
         self.minTempLabel.setText('Current Min Temp: ' + readTemp(toggleUnitState, 'min'))
-        #self.minTempLocLabel.setText('Min Temp Loc: ' + str(minLoc))
 
+    # Displaying the current date and time
     def displayTime(self):
         self.timeStatus.setText(QDateTime.currentDateTime().toString())
 
+    # Grabbing the current temperature at the cursor's location
     def grabTempValue(self):
+        # Getting the frames and cursor's location
         global frame
         global lastFrame
         global fileSelected
         global xMouse
         global yMouse
         global thread
+        # If the cameras are on and streamming is active
         if thread == 'active':
-            data = q.get(True, 500)
-            data = cv2.resize(data[:,:], (640, 480))
-            return data[yMouse, xMouse]
+            data = q.get(True, 500) 
+            data = cv2.resize(data[:,:], (640, 480))    # Putting the data in frame 640 by 480
+            return data[yMouse, xMouse]                 # Returns the temperature value at the cursor's location
         else:
             self.history.insertPlainText('ERROR: Please Start IR Camera Feed First\n')
             self.history.moveCursor(QTextCursor.End)
 
+    # Displaying the temperature on mouse click
     def on_press(self, event):
         global xMouse
         global yMouse
         global cursorVal
-        #print('you pressed', event.button, event.xdata, event.ydata)
         try:
-            xMouse = event.pos().x()
-            yMouse = event.pos().y()
-            cursorVal = self.grabTempValue()
+            xMouse = event.pos().x()            # Receiving the x coordination of the cursor
+            yMouse = event.pos().y()            # Receiving the y coordination of the cursor
+            cursorVal = self.grabTempValue()    # Assigning the current temperature at the cusor to cursorVal
             self.cursorTempLabel.setText('Cursor Temp (On Mouse Click): ' + readTemp(toggleUnitState, 'none'))
+        # If cannot get the temperature value at the cursor
         except:
             self.history.insertPlainText('ERROR: Please Start IR Camera Feed First\n')
             self.history.moveCursor(QTextCursor.End)
 
+    # Displaying the recording time allowed / storage
     def displayStorage(self):
         usage = psutil.disk_usage('/')
         oneMinVid = 20000000
         timeAvail = usage.free/oneMinVid
         self.storageLabel.setText('Recording Time Left: ' + str(round(timeAvail, 2)) + ' Minutes')
 
+    # Displaying the start recording status
     def displayRec(self):
     	if camState == 'recording':
             	self.recLabel.setText('Recording')
     	else:
     	   self.recLabel.setText('Not Recording')
 
+    # Displaying the stop recording status
     def displayNotRec(self):
         if camState == 'not_recording':
             self.recLabel.setText('Not Recording')
         else:
             self.recLabel.setText('Recording')
 
+    # Setting up the file path
     def getFiles(self):
     	global saveFilePath
     	saveFilePath = QFileDialog.getExistingDirectory(self.w, 'Open File Directory', '/')
     	self.filePathDisp.setText(saveFilePath)
     	self.fileNaming()
 
+    # Setting up the function for when closing the application
     def closeEvent(self, event):
         print("Close Event Called")
+
+        # If user closes the application when recording
         if camState == 'recording':
+            # A message box shows up, asking if they want to close
             reply = QMessageBox.question(self, 'Message',
                                          "Recording still in progress. Are you sure you want to quit?", QMessageBox.Yes, QMessageBox.No)
             print('Message Box Displayed')
+            # If they confirm yes, the closing event is accepted
             if reply == QMessageBox.Yes:
                 print('Exited Application, May Have Lost Raw Data')
                 event.accept()
+            # Else the closing event is ignored and the application will stay opened
             else:
                 event.ignore()
+        # If the application is not recording, the closing event is accepted and the application exits 
         else:
             print('Exited Application')
             event.accept()

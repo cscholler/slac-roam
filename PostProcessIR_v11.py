@@ -46,14 +46,9 @@ from postFunctions import *
 
 toggleUnitState = 'F'
 
-
-
-def ktof(val):
-    return round(((1.8 * ktoc(val) + 32.0)), 2)
-
-def ktoc(val):
-    return round(((val - 27315) / 100.0), 2)
-
+#Takes two inputs, 
+#Checks the state to see if the max or the min is needed
+#Checks the units to see if what type of unit, either Celsius or Fahrenheit, is needed
 def readTemp(unit, state):
     if state == 'max':
         if unit == 'F':
@@ -79,6 +74,7 @@ def readTemp(unit, state):
     else:
         display('What are you asking for?')
 
+#Same as readTemp but returns an int
 def readTempInt(unit, state):
     if state == 'max':
         if unit == 'F':
@@ -103,11 +99,6 @@ def readTempInt(unit, state):
             display('What are you asking for?')
     else:
         display('What are you asking for?')
-
-def raw_to_8bit(data):
-    cv2.normalize(data, data, 0, 65535, cv2.NORM_MINMAX)
-    np.right_shift(data, 8, data)
-    return cv2.cvtColor(np.uint8(data), cv2.COLOR_GRAY2RGB)
 
 frame = 1
 videoState = 'notPlay'
@@ -154,17 +145,17 @@ class Window(QMainWindow, Ui_MainWindow):
 		self.displayF.clicked.connect(self.displayTempValues)
 		self.sl.valueChanged.connect(self.slValueChange)
 		self.saveCvImageBut.clicked.connect(self.saveCvImage)
-		#cid = self.canvas.mpl_connect('button_press_event', self.on_press)
+
+
 		self.saveAsVideoSS.clicked.connect(self.saveVideoSS)
 		self.pauseVidBut.clicked.connect(self.pauseVideo)
-		#self.startEdit.returnPressed(frame = str(self.startEdit.text()))
-		#self.startEdit.returnPressed(frame = str(self.startEdit.text()))
+
+
 		self.cmIronBut.clicked.connect(self.cmIronFunc)
 		self.cmGrayBut.clicked.connect(self.cmGrayFunc)
 		self.cmRainBut.clicked.connect(self.cmRainFunc)
 		self.tempScaleBut.clicked.connect(self.colorBarDisplay)
 
-		#self.history.verticalScrollBar().setValue(self.history.verticalScrollBar().maximum())
 
 		self.timer = QTimer(self)
 		self.timer.setInterval(timerHz)
@@ -174,60 +165,56 @@ class Window(QMainWindow, Ui_MainWindow):
 		if (len(sys.argv) > 1):
 			self.getFile()
 
+#cmIronFunc changes the Color of the video to ironblack
 	def cmIronFunc(self):
 		global colorMapType
-		colorMapType = 0
+		colorMapType = 0 #default 
 		self.dispNextImg()
 		self.dispPrevImg()
 		self.history.insertPlainText('Changed Color Map\n')
 		self.history.moveCursor(QTextCursor.End)
-
+#cmRainFunc changes the Color of the video to rainbow
 	def cmRainFunc(self):
 		global colorMapType
-		colorMapType = 1
+		colorMapType = 1 #rainbow
 		self.dispNextImg()
 		self.dispPrevImg()
 		self.history.insertPlainText('Changed Color Map\n')
 		self.history.moveCursor(QTextCursor.End)
-
+#cmGrayFunc changes the Color of the video to grayscale
 	def cmGrayFunc(self):
 		global colorMapType
-		colorMapType = 2
+		colorMapType = 2 #grayscale
 		self.dispNextImg()
 		self.dispPrevImg()
 		self.history.insertPlainText('Changed Color Map\n')
 		self.history.moveCursor(QTextCursor.End)
 
+#Uses toggleUnitState to change the display temperature to Celsius
 	def dispCDef(self):
 		global toggleUnitState
 		toggleUnitState = 'C'
 		self.history.insertPlainText('Display ' + str(toggleUnitState) + '\n')
 		self.history.moveCursor(QTextCursor.End)
 
+#Uses toggleUnitState to change the display of temperature to Fahrenheit
 	def dispFDef(self):
 		global toggleUnitState
 		toggleUnitState = 'F'
 		self.history.insertPlainText('Display ' + str(toggleUnitState) + '\n')
 		self.history.moveCursor(QTextCursor.End)
 
+#
 	def slValueChange(self):
 		global frame
-		#global fileSelected
-		#if fileSelected != "":
-		#print('SlValueChange Def Called')
 		frame = self.sl.value()
 		self.dispImg()
 		self.canvas.draw()
 
 	def setSlider(self):
 		global lastFrame
-		#print('Set Slider Function Called')
-		#print('Enable Slider')
 		self.sl.setEnabled(True)
-		#print('Set Minimum')
 		self.sl.setMinimum(1)
-		#print(lastFrame)
-		#print('Set Maximum')
 		self.sl.setMaximum(lastFrame)
 		self.sl.setValue(1)
 		self.sl.setTickPosition(QSlider.TicksBelow)
@@ -239,6 +226,7 @@ class Window(QMainWindow, Ui_MainWindow):
 		self.slMidT.setText(str(round(lastFrame/(2*9),1)) + ' Seconds')
 		self.slEndT.setText(str(round(lastFrame/9,1)) + ' Seconds')
 
+	#Saves the HDF5 video to an avi video
 	def saveVideoSS(self):
 		global frame
 		global editLastFrame
@@ -304,6 +292,7 @@ class Window(QMainWindow, Ui_MainWindow):
 				print('Did Not Specify Proper FileName')
 				print('No AVI Video Generated')
 
+	#Saves the frame being viewed as a png image
 	def saveCvImage(self):
 		global fileSelected
 		global videoState
@@ -331,7 +320,7 @@ class Window(QMainWindow, Ui_MainWindow):
 				print('Did Not Specify Proper FileName')
 				print('No PNG Image Generated')
 
-
+	#
 	def makeTiff2(self):
 		global lastFrame
 		global fileSelected
@@ -393,7 +382,7 @@ class Window(QMainWindow, Ui_MainWindow):
 				self.history.moveCursor(QTextCursor.End)
 				print('Did Not Specify Proper FileName')
 				print('No Tiff File Generated')
-
+	#Gets the temperature from the location of the mouse and returns it
 	def grabTempValue(self):
 		global frame
 		global lastFrame
@@ -404,33 +393,20 @@ class Window(QMainWindow, Ui_MainWindow):
 		data = cv2.resize(data[:,:], (640, 480))
 		return data[yMouse, xMouse]
 
-	def on_press(self, event):
-		global xMouse
-		global yMouse
-		global cursorVal
-		#print('you pressed', event.button, event.xdata, event.ydata)
-		xMouse = event.xdata
-		yMouse = event.ydata
-		cursorVal = self.grabTempValue()
-		self.cursorTempLabel.setText('Cursor Temp: ' + readTemp(toggleUnitState, 'none'))
-
+	#Displays the temperature from grabTempValue and checks if the mouse is on the screen
 	def hover(self, event):
 		global xMouse
 		global yMouse
 		global cursorVal
-		#print('you pressed', event.button, event.xdata, event.ydata)
 		if event.xdata != None:
 			xMouse = int(round(event.xdata))
 			yMouse = int(round(event.ydata))
 			cursorVal = int(round(self.grabTempValue()))
-			#if xMouse > 1 and xMouse < 640 and yMouse > 0 and yMouse < 480:
 			self.cursorTempLabel.setText('Cursor Temp: ' + readTemp(toggleUnitState, 'none'))
-			#else:
-				#self.cursorTempLabel.setText('Cursor Temp: MOVE CURSOR OVER IMAGE')
 		else:
-			#print('MOVE CURSOR OVER IMAGE')
 			self.cursorTempLabel.setText('Cursor Temp: MOVE CURSOR OVER IMAGE')
 
+	#Changes the displayed max and min temperature and its location on the image
 	def displayTempValues(self):
 		global fileSelected
 		global toggleUnitState
@@ -440,12 +416,12 @@ class Window(QMainWindow, Ui_MainWindow):
 			self.minTempLabel.setText('Current Min Temp: ' + readTemp(toggleUnitState, 'min'))
 			self.minTempLocLabel.setText('Min Temp Loc: ' + str(minLoc))
 
+	#Gets the Frame that is currently being view and returns it
 	def grabDataFrame(self):
 		global frame
 		global lastFrame
 		global fileSelected
 		global colorMapType
-		#print('Display Image at Frame: ' + str(frame))
 		data = self.f_read[('image'+str(frame))][:]
 		data = cv2.resize(data[:,:], (640, 480))
 		img = cv2.LUT(raw_to_8bit(data), generate_colour_map(colorMapType))
@@ -453,6 +429,7 @@ class Window(QMainWindow, Ui_MainWindow):
 		rgbImage = cv2.cvtColor(img2, cv2.COLOR_BGR2RGB)
 		return(rgbImage)
 
+	#Starts the video 
 	def play(self):
 		global frame
 		global editLastFrame
@@ -460,7 +437,6 @@ class Window(QMainWindow, Ui_MainWindow):
 		global videoState
 		self.history.insertPlainText('Play Video\n')
 		self.history.moveCursor(QTextCursor.End)
-		#print(self.startEdit.text())
 		if self.startEdit.isModified():
 			frame = int(self.startEdit.text())
 			print('Starting at Frame: ' + self.startEdit.text())
@@ -470,12 +446,14 @@ class Window(QMainWindow, Ui_MainWindow):
 			self.timer.start()
 			videoState = 'play'
 
+	#Pauses the video
 	def pauseVideo(self):
 		global videoState
 		self.history.insertPlainText('Paused Video\n')
 		self.history.moveCursor(QTextCursor.End)
 		videoState = 'pause'
 
+	#Checks to see where you are in the video
 	def playVid5(self):
 		global videoState
 		global frame
@@ -487,7 +465,6 @@ class Window(QMainWindow, Ui_MainWindow):
 					self.sl.setValue(frame)
 					if frame != lastFrame:
 						frame += 1
-					#print('playing video')
 				else:
 					print('You are at Stop Frame')
 					videoState = 'pause'
@@ -495,6 +472,7 @@ class Window(QMainWindow, Ui_MainWindow):
 				print('You are at Last Frame')
 				videoState = 'pause'
 
+	#Shows the new frame in the video
 	def dispNextImg(self):
 		global frame
 		global lastFrame
@@ -509,10 +487,9 @@ class Window(QMainWindow, Ui_MainWindow):
 				frame += framerate
 			else:
 				print('You are at Last Frame')
-			#self.dispImg()
-			#self.canvas.draw()
 			self.sl.setValue(frame)
 
+	#Goes back to the previous frame
 	def dispPrevImg(self):
 		global frame
 		global fileSelected
@@ -529,6 +506,7 @@ class Window(QMainWindow, Ui_MainWindow):
 			#self.canvas.draw()
 			self.sl.setValue(frame)
 
+	#Displays the current frame of video
 	def dispImg(self):
 		global frame
 		global lastFrame
@@ -550,16 +528,8 @@ class Window(QMainWindow, Ui_MainWindow):
 		#rgbImage = img #blue is hot
 		self.ax = self.figure.add_subplot(111)
 		self.ax.clear()
-		#cmap = mpl.cm.cool
-		#norm = mpl.colors.Normalize(vmin=5, vmax=10)
-		#print('Ran dispImg')
-		#print(frame)
 		if frame == 1:
 			self.figure.tight_layout()
-		#colorVals = cm.get_clim(rgbImage)
-		#print(colorVals)
-		#cax = self.figure.add_axes([0.2, 0.08, 0.6, 0.04])
-		#self.figure.colorbar(rgbImage, cax, orientation='horizontal')
 		self.cax = self.ax.imshow(rgbImage)
 		#self.cb = self.figure.colorbar(self.cax)
 		lastFrame = len(self.f_read)
@@ -568,23 +538,18 @@ class Window(QMainWindow, Ui_MainWindow):
 		self.currentTimeLabel.setText('Current Time: ' + str(round(((frame-1)/9.00),2)))
 		cid = self.canvas.mpl_connect('motion_notify_event', self.hover)
 
+	#Changes the Color of the Video to the color that is set
 	def colorBarDisplay(self):
 		global toggleUnitState
 		global frame
 		global colorMapType
 		rgbImage = self.grabDataFrame()
 		rgbImage = cv2.cvtColor(rgbImage, cv2.COLOR_BGR2RGB)
-		#cm.get_clim(rgbImage)
-		#colors = rgbImage.getcolors()
 		C = generate_colour_map(colorMapType)
-		#print(C)
 		C = np.squeeze(C)
 		C = C[...,::-1]
-		#print(C)
 		C2 = C/255.0
-		#print(C2)
 		ccm = ListedColormap(C2)
-		#print(ccm)
 		fig = plt.figure()
 		plt.title('Frame: ' + str(frame) + '   Max Temp: ' + readTemp(toggleUnitState, 'max'))
 		bounds = [0, 50, 100]
@@ -595,6 +560,7 @@ class Window(QMainWindow, Ui_MainWindow):
 		cbar.set_label('     [$^\circ$' + toggleUnitState + ']', rotation=0) #270
 		plt.show()
 
+	#enables the buttons and other elements of the gui
 	def enableThings(self):
 		self.playVidBut.setEnabled(True)
 		self.pauseVidBut.setEnabled(True)
@@ -609,13 +575,13 @@ class Window(QMainWindow, Ui_MainWindow):
 		self.displayF.setEnabled(True)
 		self.tempScaleBut.setEnabled(True)
 
+	#Gets and Checks the HDF5 video file
 	def getFile(self):
 		global frame
 		global fileSelected
 		global editLastFrame
 		global lastFrame
 		global usedOnce
-		#self.pauseVideo()
 		if (len(sys.argv) > 1) and (usedOnce == 1):
 			print("First file specified from command line")
 			fileSelected = sys.argv[1]
@@ -645,7 +611,6 @@ class Window(QMainWindow, Ui_MainWindow):
 				self.history.moveCursor(QTextCursor.End)
 				print('Selected File and Displayed First Frame')
 				self.canvas.draw()
-				#else:
 			except:
 				self.history.insertPlainText('ERROR: Incorrect File Type Selected\n Please select .HDF5 File\n')
 				self.history.moveCursor(QTextCursor.End)
