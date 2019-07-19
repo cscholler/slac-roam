@@ -1,9 +1,5 @@
 import numpy as np
-
-
-colorMapType = 0
-maxVal = 0
-minVal = 0
+import cv2
 
 #For PostProcess, generate_colour_map can chnage the color of the image
 #For RecordIR, generate_colour_map only uses the ironblack option
@@ -103,3 +99,14 @@ def generate_colour_map(num):
 
     return lut
 
+#Takes Celsius and converts it to Fahrenheit
+def ktof(val):
+    return round(((1.8 * ktoc(val) + 32.0)), 2)
+#takes the temp and converts it to Celsius
+def ktoc(val):
+    return round(((val - 27315) / 100.0), 2)
+#
+def raw_to_8bit(data):
+    cv2.normalize(data, data, 0, 65535, cv2.NORM_MINMAX)
+    np.right_shift(data, 8, data)
+    return cv2.cvtColor(np.uint8(data), cv2.COLOR_GRAY2RGB)

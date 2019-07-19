@@ -156,12 +156,6 @@ def startStream():
 
 toggleUnitState = 'F'
 
-def ktof(val):
-    return round(((1.8 * ktoc(val) + 32.0)), 2)
-
-def ktoc(val):
-    return round(((val - 27315) / 100.0), 2)
-
 def display_temperatureK(img, val_k, loc, color):
     val = ktof(val_k)
     cv2.putText(img,"{0:.1f} degF".format(val), loc, cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 2)
@@ -175,11 +169,6 @@ def display_temperatureC(img, val_k, loc, color):
     x, y = loc
     cv2.line(img, (x - 2, y), (x + 2, y), color, 1)
     cv2.line(img, (x, y - 2), (x, y + 2), color, 1)
-
-def raw_to_8bit(data):
-    cv2.normalize(data, data, 0, 65535, cv2.NORM_MINMAX)
-    np.right_shift(data, 8, data)
-    return cv2.cvtColor(np.uint8(data), cv2.COLOR_GRAY2RGB)
 
 camState = 'not_recording'
 tiff_frame = 1
@@ -566,7 +555,7 @@ class App(QMainWindow, Ui_MainWindow):
     def displayTime(self):
         self.timeStatus.setText(QDateTime.currentDateTime().toString())
 
-    def grabTempValue(self):
+    def F(self):
         global frame
         global lastFrame
         global fileSelected
