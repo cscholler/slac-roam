@@ -606,6 +606,7 @@ class App(QMainWindow, Ui_MainWindow):
         global xMouse
         global yMouse
         global thread
+        # If the cameras are on and streamming is active
         if thread == 'active':
             data = q.get(True, 500) 
             data = cv2.resize(data[:,:], (640, 480))    # Putting the data in frame 640 by 480
@@ -620,10 +621,11 @@ class App(QMainWindow, Ui_MainWindow):
         global yMouse
         global cursorVal
         try:
-            xMouse = event.pos().x()
-            yMouse = event.pos().y()
-            cursorVal = self.grabTempValue()
+            xMouse = event.pos().x()            # Receiving the x coordination of the cursor
+            yMouse = event.pos().y()            # Receiving the y coordination of the cursor
+            cursorVal = self.grabTempValue()    # Assigning the current temperature at the cusor to cursorVal
             self.cursorTempLabel.setText('Cursor Temp (On Mouse Click): ' + readTemp(toggleUnitState, 'none'))
+        # If cannot get the temperature value at the cursor
         except:
             self.history.insertPlainText('ERROR: Please Start IR Camera Feed First\n')
             self.history.moveCursor(QTextCursor.End)
