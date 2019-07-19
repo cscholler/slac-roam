@@ -602,7 +602,7 @@ class App(QMainWindow, Ui_MainWindow):
         # Getting the frames and cursor's location
         global frame
         global lastFrame
-        global fileSelected
+        global fileSelectedgit 
         global xMouse
         global yMouse
         global thread
