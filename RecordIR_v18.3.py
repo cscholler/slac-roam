@@ -8,9 +8,6 @@ from PyQt5.QtCore import (QCoreApplication, QThread, QThreadPool, pyqtSignal, py
 from PyQt5.QtGui import (QImage, QPixmap, QTextCursor)
 from PyQt5.QtWidgets import (QWidget, QMainWindow, QApplication, QLabel, QPushButton, QVBoxLayout, QGridLayout, QSizePolicy, QMessageBox, QFileDialog, QSlider, QComboBox, QProgressDialog)
 from PyQt5.QtWidgets import QInputDialog, QDialog, QLineEdit
-# from PyQt5.QtGui import *
-# from PyQt5.QtCore import *
-
 import sys
 import os.path
 import cv2
@@ -35,11 +32,11 @@ postScriptFileName = "PostProcessIR_v11.py"
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
 # Global variable decleration
-anglePan = 0 # Angle of pantilt Pan servo, range [-90,90]
-angleTilt = 0 # Angle of pantilt Titlt servo, range [-90,90]
+anglePan = 0        # Angle of pantilt Pan servo, range [-90,90]
+angleTilt = 0       # Angle of pantilt Titlt servo, range [-90,90]
 
-BUF_SIZE = 2
-q = Queue(BUF_SIZE)
+BUF_SIZE = 2        # Maximum size of Queue used for threading
+q = Queue(BUF_SIZE) # Constructor of Queue q
 
 # Initialize pantilt modules
 def pantiltSetup():
@@ -69,7 +66,7 @@ class exitDialog(QDialog):
         self.exitButton.clicked.connect(self.exitProgram)
 
     def exitProgram(self):
-        os.excel(sys.executable, os.path.abspath(__file__), *sys.argv) # Restart program
+        os.excel(sys.executable, os.path.abspath(__file__), *sys.argv) # When restart button is pressed program will close and restart
 
 # Definition of Servo Error dialog window
 class servoErrorWindow(QDialog):
@@ -83,6 +80,7 @@ class camErrorWindow(QDialog):
         super(camErrorWindow, self).__init__()
         uic.loadUi('camErrorWindow.ui', self)
 
+# Function for frame storage
 def py_frame_callback(frame, userptr):
     array_pointer = cast(frame.contents.data, POINTER(c_uint16 * (frame.contents.width * frame.contents.height)))
     data = np.frombuffer(
@@ -92,32 +90,29 @@ def py_frame_callback(frame, userptr):
     if not q.full():
         q.put(data)
 
+# Call of stored frames
 PTR_PY_FRAME_CALLBACK = CFUNCTYPE(None, POINTER(uvc_frame), c_void_p)(py_frame_callback)
 
-
-def cam_error():
-		camerr = camErrorWindow()	# Call camera error dialog box
-		camerr.show()	
-
+# Function that finds and opens the thermal camera using libuvc
 def startStream():
     global devh
-
+    # Pointers usef to initialization of VC service context
     ctx = POINTER(uvc_context)()
     dev = POINTER(uvc_device)()
     devh = POINTER(uvc_device_handle)()
     ctrl = uvc_stream_ctrl()
 
+    # Initialize a UVC service context
     res = libuvc.uvc_init(byref(ctx), 0)
     if res < 0:
         print("uvc_init error")
-        #exit(1)
-
+    # Attempt to locate thermal camera
     try:
         res = libuvc.uvc_find_device(ctx, byref(dev), PT_USB_VID, PT_USB_PID, 0)
         if res < 0:
             print("uvc_find_device error")
             exit(1)
-
+        # Attempt to open thermal camera
         try:
             res = libuvc.uvc_open(dev, byref(devh))
             if res < 0:
@@ -129,15 +124,19 @@ def startStream():
             print_device_info(devh)
             print_device_formats(devh)
 
+            # Format frame with expected format
             frame_formats = uvc_get_frame_formats_by_guid(devh, VS_FMT_GUID_Y16)
+            # Insure themal camera supports correct format
             if len(frame_formats) == 0:
                 print("device does not support Y16")
                 exit(1)
 
+            # Retrieve and format thermal camera stream
             libuvc.uvc_get_stream_ctrl_format_size(devh, byref(ctrl), UVC_FRAME_FORMAT_Y16,
                 frame_formats[0].wWidth, frame_formats[0].wHeight, int(1e7 / frame_formats[0].dwDefaultFrameInterval)
             )
 
+            # Begin streaming from thermal camera
             res = libuvc.uvc_start_streaming(devh, byref(ctrl), PTR_PY_FRAME_CALLBACK, None, 0)
             if res < 0:
                 print("uvc_start_streaming failed: {0}".format(res))
@@ -147,58 +146,77 @@ def startStream():
             print_shutter_info(devh)
 
         except:
-            #libuvc.uvc_unref_device(dev)
             print('Failed to Open Device')
     except:
-        #libuvc.uvc_exit(ctx)
         print('Failed to Find Device')
         exit(1)
 
 toggleUnitState = 'F'
 
+# Kelvin to Ferinheight conversion
+def ktof(val):
+    return round(((1.8 * ktoc(val) + 32.0)), 2)
+
+# Kelvin to Celsius conversion
+def ktoc(val):
+    return round(((val - 27315) / 100.0), 2)
+
+# Function to display tempurature in Kelvin - I don't think this is actually being used
 def display_temperatureK(img, val_k, loc, color):
-    val = ktof(val_k)
-    cv2.putText(img,"{0:.1f} degF".format(val), loc, cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 2)
-    x, y = loc
-    cv2.line(img, (x - 2, y), (x + 2, y), color, 1)
-    cv2.line(img, (x, y - 2), (x, y + 2), color, 1)
+    val = ktof(val_k)                                                                           # Convert given temp value to 
+    cv2.putText(img,"{0:.1f} degF".format(val), loc, cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 2)  # Place text
+    x, y = loc                                                                                  # x and y location of display temperature                                                                                  
+    cv2.line(img, (x - 2, y), (x + 2, y), color, 1)                                             # location of first drawn line
+    cv2.line(img, (x, y - 2), (x, y + 2), color, 1)                                             # location of second drawn line
 
+# Function to display tempurature in Celsius - I don't think this is actually being used
 def display_temperatureC(img, val_k, loc, color):
-    val = ktof(val_c)
-    cv2.putText(img,"{0:.1f} degC".format(val), loc, cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 2)
-    x, y = loc
-    cv2.line(img, (x - 2, y), (x + 2, y), color, 1)
-    cv2.line(img, (x, y - 2), (x, y + 2), color, 1)
+    val = ktof(val_c)                                                                           # Convert given temp value to celsius
+    cv2.putText(img,"{0:.1f} degC".format(val), loc, cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 2)  # Place text
+    x, y = loc                                                                                  # x and y location of display temperature
+    cv2.line(img, (x - 2, y), (x + 2, y), color, 1)                                             # location of first drawn line
+    cv2.line(img, (x, y - 2), (x, y + 2), color, 1)                                             # location of second drawn line
+    print("running")
 
+# Convert raw image format to 8bit image format
+def raw_to_8bit(data):
+    cv2.normalize(data, data, 0, 65535, cv2.NORM_MINMAX)    # Normalise data to facilitate conversion
+    np.right_shift(data, 8, data)                           # Shifts data for conversion
+    return cv2.cvtColor(np.uint8(data), cv2.COLOR_GRAY2RGB) # Return image converted from gray scale to RGB
+
+# Secondary global variable declaration
 camState = 'not_recording'
 tiff_frame = 1
 maxVal = 0
 minVal = 0
-
 fileNum = 1
+
+# Functions that starts recording and identifies the file path 
 @pyqtSlot(QImage)
 def startRec():
     global camState
     global saveFilePath
     global mostRecentFile
     if camState == 'recording':
-        print('Alredy Recording')
+        print('Already Recording')
+    # Setting up file path and file name when not recording yet
     else:
         file_nameH = str(('Lepton HDF5 Vid ' + QDateTime.currentDateTime().toString()))
         file_nameH = file_nameH.replace(" ", "_")
         file_nameH = str(file_nameH.replace(":", "-"))
+    # Starts recording and writing the recorded filename
     try:
         filePathAndName = str(saveFilePath + '/' + file_nameH)
-        #saveFilePathSlash = str(saveFilePath + '/')
         startRec.hdf5_file = h5py.File(filePathAndName, mode='w')
-        #startRec.hdf5_file = h5py.File(os.path.join(saveFilePathSlash, file_nameH))
         camState = 'recording'
         print('Started Recording')
+    # If the above fails
     except:
         print('Incorrect File Path')
         camState = 'not_recording'
         print('Did Not Begin Recording')
 
+# Functions that converts a frame's data into an image
 def getFrame():
     global tiff_frame
     global camState
@@ -207,14 +225,19 @@ def getFrame():
     data = q.get(True, 500)
     if data is None:
         print('No Data')
+    # If recording is active
     if camState == 'recording':
+        # Gets the data of each frame
         startRec.hdf5_file.create_dataset(('image'+str(tiff_frame)), data=data)
         tiff_frame += 1
     minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(data)
+    # Generates the frame into an image and return it
     img = cv2.LUT(raw_to_8bit(data), generate_colour_map(0))
-    return img
+    return img 
 
+# Reads temperature returns the correct value
 def readTemp(unit, state):
+    # Reads the maximum temperature
     if state == 'max':
         if unit == 'F':
             return (str(ktof(maxVal)) + ' ' + unit)
@@ -222,6 +245,7 @@ def readTemp(unit, state):
             return (str(ktoc(maxVal)) + ' ' + unit)
         else:
             print('What are you asking for?')
+    # Reads the minimum temperature
     elif state == 'min':
         if unit == 'F':
             return (str(ktof(minVal)) + ' ' + unit)
@@ -229,6 +253,7 @@ def readTemp(unit, state):
             return (str(ktoc(minVal)) + ' ' + unit)
         else:
             print('What are you asking for?')
+    # Reads the temperature at the cursor's location
     elif state == 'none':
         if unit == 'F':
             return (str(ktof(cursorVal)) + ' ' + unit)
@@ -239,6 +264,7 @@ def readTemp(unit, state):
     else:
         print('What are you asking for?')
 
+# Changes Fahrenheit label to Celsius label
 def updateMaxTempLabel():
     if toggleUnitState == 'F':
         return ktof(maxVal)
@@ -247,73 +273,71 @@ def updateMaxTempLabel():
     else:
         print('No Units Selected')
 
+# Initializes variables for the overlay process
+# Determined to be changed later
 alpha = 5
 beta = 5
+
+# Class that includes the streaming functionality
 class MyThread(QThread):
     changePixmap = pyqtSignal(QImage)
-    
     def run(self):
         global alpha
         global beta
-        global RGB
-        global GUI
-        global IR
 
         print('Start Stream')
         
+        # Trying to open the webcam
         onWebcam = False
         print("Trying to open webcam ...")
-    
         self.cam = cv2.VideoCapture(0)
 
+        # Checking if the webcam is connected
         if not self.cam.isOpened():
             self.cam.release()
             print("Cannot open webcam")
+            # If webcam isn't opened, will show the thermal camera only
             print("Showing the thermal camera only ...")
             onWebcam = False
+
         else:
             print("Webcam opened!")
             print("Showing both cameras ...")
             onWebcam = True
 
         while True:
-            frame = getFrame()
-            rgbImage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            resizedIR = cv2.resize(rgbImage, (640, 480))
+            frame = getFrame() # Getting the thermal camera frame
+            rgbImage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # Converts the thermal frame into an image
+            resizedIR = cv2.resize(rgbImage, (640, 480)) # Resize so that they have the same size
 
+            # If the webcam is on, shows the overlay
             if onWebcam == True:
-                framecam = self.getWebcamFrame()
-                camImage = cv2.cvtColor(framecam, cv2.COLOR_BGR2RGB)
-                resizedCam = cv2.resize(camImage, (640, 480))
+                framecam = self.getWebcamFrame() # Getting the webcam's frame
+                camImage = cv2.cvtColor(framecam, cv2.COLOR_BGR2RGB) # Converts the webcam frame into an image
+                rotatedCam = cv2.flip(camImage, -1) # Flip the webcam image
+                resizedCam = cv2.resize(rotatedCam, (640, 480)) # Resizes webcam image
 
+                # Creates overlay image
                 image = cv2.addWeighted(resizedCam, (alpha*.1), resizedIR, (beta*.1), 0.0)	# Overlay camera feeds
 
+                # Getting the overlay image info
                 h, w, channel = image.shape
                 step = channel * w
+                # Uses the info above to convert the image into the Qt format
                 convertToQtFormat = QImage(image.data, image.shape[1], image.shape[0], step, QImage.Format_RGB888)
             
+            # If the webcam is not on, shows the resized IR camera
             elif onWebcam == False: 
                 convertToQtFormat = QImage(resizedIR.data, resizedIR.shape[1], resizedIR.shape[0], QImage.Format_RGB888)
 
-            self.changePixmap.emit(convertToQtFormat)
+            self.changePixmap.emit(convertToQtFormat) # Emits the image in Qt format
 
-        self.cam.release()
+        self.cam.release() # WHen the application is done, release the webcam
     
+    # Getting webcam frame
     def getWebcamFrame(self):
-        ret, frameread = self.cam.read()
+        ret, frameread = self.cam.read() # Reads each frame info and returns
         return frameread
-
-# Definition of Servo Error dialog window
-class servoErrorWindow(QDialog):
-	def __init__(self):
-		super(servoErrorWindow,self).__init__()
-		uic.loadUi('servoErrorWindow.ui',self)
-
-# Definition of Camera Error dialog window
-class camErrorWindow(QDialog):
-    def __init__(self):
-        super(camErrorWindow,self).__init__()
-        uic.loadUi('camErrorWindow.ui',self)
         
 thread = "unactive"
 saveFilePath = ""
@@ -591,7 +615,7 @@ class App(QMainWindow, Ui_MainWindow):
         # Getting the frames and cursor's location
         global frame
         global lastFrame
-        global fileSelected
+        global fileSelectedgit 
         global xMouse
         global yMouse
         global thread
