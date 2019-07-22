@@ -145,12 +145,15 @@ def startStream():
             print("done")
             print_shutter_info(devh)
 
+        # When thermal camera cannot be opened print message
         except:
             print('Failed to Open Device')
+    # When thermal camera cannot be found print message and exit
     except:
         print('Failed to Find Device')
         exit(1)
 
+# Displayed temperature unit
 toggleUnitState = 'F'
 
 # Kelvin to Ferinheight conversion
@@ -185,18 +188,18 @@ def raw_to_8bit(data):
     return cv2.cvtColor(np.uint8(data), cv2.COLOR_GRAY2RGB) # Return image converted from gray scale to RGB
 
 # Secondary global variable declaration
-camState = 'not_recording'
-tiff_frame = 1
-maxVal = 0
-minVal = 0
-fileNum = 1
+camState = 'not_recording'  # Camera recording state storage
+tiff_frame = 1              # Frame key storage
+maxVal = 0                  # Maximum temperature visable in frame              
+minVal = 0                  # Minimum temperature visable in frame
 
 # Functions that starts recording and identifies the file path 
 @pyqtSlot(QImage)
 def startRec():
     global camState
     global saveFilePath
-    global mostRecentFile
+    
+    # Check if camera is recording already
     if camState == 'recording':
         print('Already Recording')
     # Setting up file path and file name when not recording yet
@@ -222,7 +225,7 @@ def getFrame():
     global camState
     global maxVal
     global minVal
-    data = q.get(True, 500)
+    data = q.get(True, 500) # Data format for dataset
     if data is None:
         print('No Data')
     # If recording is active
@@ -275,8 +278,8 @@ def updateMaxTempLabel():
 
 # Initializes variables for the overlay process
 # Determined to be changed later
-alpha = 5
-beta = 5
+alpha = 5   # RGB Camera opacity
+beta = 5    # IR Camera opacity
 
 # Class that includes the streaming functionality
 class MyThread(QThread):
@@ -290,7 +293,20 @@ class MyThread(QThread):
         # Trying to open the webcam
         onWebcam = False
         print("Trying to open webcam ...")
-        self.cam = cv2.VideoCapture(0)
+
+        webCamPort = 0          # Default webcam port
+        webCamFound = False     # Storage of webcam located state
+
+        # Locate webcam from ports 0-5
+        while webCamFound == False and webCamPort <= 5:
+            self.cam = cv2.VideoCapture(webCamPort)
+            # If webcam is not located at current port relase that port and check next
+            if not self.cam.isOpened():
+                self.cam.release()
+                webCamPort += 1
+            # Exit loop when cam is found or ports 0-5 are checked
+            else:
+                webCamFound = True
 
         # Checking if the webcam is connected
         if not self.cam.isOpened():
@@ -305,6 +321,7 @@ class MyThread(QThread):
             print("Showing both cameras ...")
             onWebcam = True
 
+        # While camera stream is running overlay cameras
         while True:
             frame = getFrame() # Getting the thermal camera frame
             rgbImage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # Converts the thermal frame into an image
@@ -511,10 +528,8 @@ class App(QMainWindow, Ui_MainWindow):
 
     # Saving file after recording
     def stopRecAndSave(self):
-    	global fileNum
     	global tiff_frame
     	global camState
-    	global dataCollection
     	if tiff_frame > 1:
     		print('Ended Recording')
     		camState = 'not_recording'
@@ -613,9 +628,6 @@ class App(QMainWindow, Ui_MainWindow):
     # Grabbing the current temperature at the cursor's location
     def grabTempValue(self):
         # Getting the frames and cursor's location
-        global frame
-        global lastFrame
-        global fileSelectedgit 
         global xMouse
         global yMouse
         global thread
