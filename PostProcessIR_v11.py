@@ -313,7 +313,6 @@ class Window(QMainWindow, Ui_MainWindow):
 					self.history.moveCursor(QTextCursor.End)
 				except: #IF anything fails 
 					self.history.insertPlainText('No PNG Image Generated\n Did Not Specify Proper FileName\n')
-####################HALFWAY############################################################################################################################################
 					self.history.moveCursor(QTextCursor.End)
 					print('Did Not Specify Proper FileName')
 					print('No PNG Image Generated')
