@@ -39,68 +39,68 @@ from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 import random
 colorMapType = 0
 
-import warnings
+import warnings 
 warnings.filterwarnings("ignore")
 
 from postFunctions import *
 
-toggleUnitState = 'F'
+toggleUnitState = 'F' # Default unit of temperature
 
 #Takes two inputs, 
 #Checks the state to see if the max or the min is needed
 #Checks the units to see if what type of unit, either Celsius or Fahrenheit, is needed
 def readTemp(unit, state):
-    if state == 'max':
-        if unit == 'F':
-            return (str(ktof(maxVal)) + ' ' + unit)
-        elif unit == 'C':
-            return (str(ktoc(maxVal)) + ' ' + unit)
+    if state == 'max': 
+        if unit == 'F': 
+            return (str(ktof(maxVal)) + ' ' + unit) #Returns the max temperature in Fahrenheit as a String
+        elif unit == 'C': 
+            return (str(ktoc(maxVal)) + ' ' + unit) #Returns the max temperature in Celsius as a String
         else:
-            display('What are you asking for?')
-    elif state == 'min':
-        if unit == 'F':
-            return (str(ktof(minVal)) + ' ' + unit)
-        elif unit == 'C':
-            return (str(ktoc(minVal)) + ' ' + unit)
+            display('What are you asking for?') #If errors, display error message
+    elif state == 'min': 
+        if unit == 'F': 
+            return (str(ktof(minVal)) + ' ' + unit) #Returns the min temperature in Fahrenheit as a String
+        elif unit == 'C': 
+            return (str(ktoc(minVal)) + ' ' + unit) #Returns the min temperature in Celsius as  a String
         else:
-            display('What are you asking for?')
-    elif state == 'none':
-        if unit == 'F':
-            return (str(ktof(cursorVal)) + ' ' + unit)
-        elif unit == 'C':
-            return (str(ktoc(cursorVal)) + ' ' + unit)
+            display('What are you asking for?') #If errors, display error message
+    elif state == 'none': 
+        if unit == 'F': 
+            return (str(ktof(cursorVal)) + ' ' + unit) #Returns the cursor temperature in Fahrenheit as a String
+        elif unit == 'C': 
+            return (str(ktoc(cursorVal)) + ' ' + unit) #Returns the cursor temperature in Celsius as  a String
         else:
-            display('What are you asking for?')
+            display('What are you asking for?') #If errors, display error message
     else:
-        display('What are you asking for?')
+        display('What are you asking for?') #If errors, display error message
 
 #Same as readTemp but returns an int
 def readTempInt(unit, state):
     if state == 'max':
         if unit == 'F':
-            return ktof(maxVal)
+            return ktof(maxVal)  #Returns the max temperature in Fahrenheit as a int
         elif unit == 'C':
-            return ktoc(maxVal)
+            return ktoc(maxVal) #Returns the max temperature in Celsius as a int
         else:
-            display('What are you asking for?')
+            display('What are you asking for?') #If errors, display error message
     elif state == 'min':
         if unit == 'F':
-            return ktof(minVal)
+            return ktof(minVal) #Returns the min temperature in Fahrenheit as a int
         elif unit == 'C':
-            return ktoc(minVal)
+            return ktoc(minVal) #Returns the min temperature in Celsius as a int
         else:
-            display('What are you asking for?')
+            display('What are you asking for?') #If errors, display error message
     elif state == 'none':
         if unit == 'F':
-            return ktof(cursorVal)
+            return ktof(cursorVal) #Returns the cursor temperature in Fahrenheit as a int
         elif unit == 'C':
-            return ktoc(cursorVal)
+            return ktoc(cursorVal) #Returns the cursor temperature in Celsius as a int
         else:
-            display('What are you asking for?')
+            display('What are you asking for?') #If errors, display error message
     else:
-        display('What are you asking for?')
+        display('What are you asking for?') #If errors, display error message
 
-frame = 1
+frame = 1 # The first frame
 videoState = 'notPlay'
 framerate = 1 #(1/9 frames per second), do not adjust
 timerHz = 115 #ms 1/8.7 = 0.1149 sec, decrease to increase speed
@@ -115,7 +115,7 @@ class Window(QMainWindow, Ui_MainWindow):
 		self.initUI()
 
 	def initUI(self):
-		print('Starting user interface...')
+		print('Starting user interface...') 
 		self.w = QWidget()
 
 		# a figure instance to plot on
@@ -150,7 +150,7 @@ class Window(QMainWindow, Ui_MainWindow):
 		self.saveAsVideoSS.clicked.connect(self.saveVideoSS)
 		self.pauseVidBut.clicked.connect(self.pauseVideo)
 
-
+		# Color changing buttons
 		self.cmIronBut.clicked.connect(self.cmIronFunc)
 		self.cmGrayBut.clicked.connect(self.cmGrayFunc)
 		self.cmRainBut.clicked.connect(self.cmRainFunc)
@@ -165,15 +165,16 @@ class Window(QMainWindow, Ui_MainWindow):
 		if (len(sys.argv) > 1):
 			self.getFile()
 
-#cmIronFunc changes the Color of the video to ironblack
+	#cmIronFunc changes the Color of the video to ironblack
 	def cmIronFunc(self):
 		global colorMapType
 		colorMapType = 0 #default 
-		self.dispNextImg()
-		self.dispPrevImg()
-		self.history.insertPlainText('Changed Color Map\n')
-		self.history.moveCursor(QTextCursor.End)
-#cmRainFunc changes the Color of the video to rainbow
+		self.dispNextImg() #Goes through the next frames and changes their color
+		self.dispPrevImg() #Goes through the prevous frames and changes their color
+		self.history.insertPlainText('Changed Color Map\n') #Tells the user the color has been changed
+		self.history.moveCursor(QTextCursor.End) #Ends something
+		
+	#cmRainFunc changes the Color of the video to rainbow
 	def cmRainFunc(self):
 		global colorMapType
 		colorMapType = 1 #rainbow
@@ -181,7 +182,8 @@ class Window(QMainWindow, Ui_MainWindow):
 		self.dispPrevImg()
 		self.history.insertPlainText('Changed Color Map\n')
 		self.history.moveCursor(QTextCursor.End)
-#cmGrayFunc changes the Color of the video to grayscale
+
+	#cmGrayFunc changes the Color of the video to grayscale
 	def cmGrayFunc(self):
 		global colorMapType
 		colorMapType = 2 #grayscale
@@ -190,75 +192,76 @@ class Window(QMainWindow, Ui_MainWindow):
 		self.history.insertPlainText('Changed Color Map\n')
 		self.history.moveCursor(QTextCursor.End)
 
-#Uses toggleUnitState to change the display temperature to Celsius
+	#Uses toggleUnitState to change the display temperature to Celsius
 	def dispCDef(self):
-		global toggleUnitState
-		toggleUnitState = 'C'
-		self.history.insertPlainText('Display ' + str(toggleUnitState) + '\n')
-		self.history.moveCursor(QTextCursor.End)
+		global toggleUnitState #Gets Default
+		toggleUnitState = 'C' #Changes toggleUnitState to C Which changes unit to Celsius
+		self.history.insertPlainText('Display ' + str(toggleUnitState) + '\n') #tells user the unit of temperature is now Celsius
+		self.history.moveCursor(QTextCursor.End) #Ends something
 
-#Uses toggleUnitState to change the display of temperature to Fahrenheit
+	#Uses toggleUnitState to change the display of temperature to Fahrenheit
 	def dispFDef(self):
 		global toggleUnitState
 		toggleUnitState = 'F'
 		self.history.insertPlainText('Display ' + str(toggleUnitState) + '\n')
 		self.history.moveCursor(QTextCursor.End)
 
-#
+	#Moves frames with the slider
 	def slValueChange(self):
-		global frame
-		frame = self.sl.value()
-		self.dispImg()
-		self.canvas.draw()
+		global frame #Gets the default
+		frame = self.sl.value() #Sets frame to slider value
+		self.dispImg() # Gets the new 
+		self.canvas.draw() # Redraws to the screen
 
+	#Setups the slider
 	def setSlider(self):
-		global lastFrame
-		self.sl.setEnabled(True)
-		self.sl.setMinimum(1)
-		self.sl.setMaximum(lastFrame)
-		self.sl.setValue(1)
-		self.sl.setTickPosition(QSlider.TicksBelow)
-		self.sl.setTickInterval(9)
-		self.slStartF.setText('First Frame: 1')
-		self.slMidF.setText('Mid Frame: ' + str(round(lastFrame/2)))
-		self.slEndF.setText('Last Frame: ' + str(lastFrame))
-		self.slStartT.setText('0 Seconds')
-		self.slMidT.setText(str(round(lastFrame/(2*9),1)) + ' Seconds')
-		self.slEndT.setText(str(round(lastFrame/9,1)) + ' Seconds')
+		global lastFrame # Set lastFrame as a variable
+		self.sl.setEnabled(True) #Enable the slider
+		self.sl.setMinimum(1) #Sets the min value
+		self.sl.setMaximum(lastFrame) #Sets the max value
+		self.sl.setValue(1) #Sets default value
+		self.sl.setTickPosition(QSlider.TicksBelow) 
+		self.sl.setTickInterval(9) 
+		self.slStartF.setText('First Frame: 1') #Displays the below the slider the first frame of 1
+		self.slMidF.setText('Mid Frame: ' + str(round(lastFrame/2))) #Displays the below the middle of the slider to whatever the middle frame is
+		self.slEndF.setText('Last Frame: ' + str(lastFrame)) #Displays the below the end of the slider to whatever the last frame is
+		self.slStartT.setText('0 Seconds') #Display 0 seconds in the beginning of the video
+		self.slMidT.setText(str(round(lastFrame/(2*9),1)) + ' Seconds') #Display half way through the video
+		self.slEndT.setText(str(round(lastFrame/9,1)) + ' Seconds') #Display how many seconds are in the whole video 
 
 	#Saves the HDF5 video to an avi video
 	def saveVideoSS(self):
-		global frame
-		global editLastFrame
-		global videoState
-		global fileSelected
-		videoState = 'pause'
-		if fileSelected != "":
-			frame = int(self.startEdit.text())
-			editLastFrame = int(self.stopEdit.text())
-			fileNameVid = ""
-			dlgVid = QFileDialog()
-			dlgVid.setDefaultSuffix('.avi')
-			fileNameVid, filter = dlgVid.getSaveFileName(self.w, 'Navigate to Directory and Choose a File Name to Save To', fileSelected + '_f' + str(frame) + '-' + str(editLastFrame) + '_VIDEO.avi', 'AVI Video (*.avi)')
-			fileNameVid = str(fileNameVid)
-			fourcc = cv2.VideoWriter_fourcc(*'MJPG')
-			if fileNameVid != "":
+		global frame # Gets frame
+		global editLastFrame # Gets last frame
+		global videoState # Gets the default videoState
+		global fileSelected # Gets the default fileSelected which should be nothing
+		videoState = 'pause' 
+		if fileSelected != "": # Checks to see if a file was selected
+			frame = int(self.startEdit.text()) #Sets beginning of the video 
+			editLastFrame = int(self.stopEdit.text()) #Sets the end of the video
+			fileNameVid = "" 
+			dlgVid = QFileDialog() 
+			dlgVid.setDefaultSuffix('.avi') #Adds the .avi at the end of the file making it a video file
+			fileNameVid, filter = dlgVid.getSaveFileName(self.w, 'Navigate to Directory and Choose a File Name to Save To', fileSelected + '_f' + str(frame) + '-' + str(editLastFrame) + '_VIDEO.avi', 'AVI Video (*.avi)') #Changes the name of the file
+			fileNameVid = str(fileNameVid) #Makes sure that fileName is a string
+			fourcc = cv2.VideoWriter_fourcc(*'MJPG') 
+			if fileNameVid != "": #Checks to see if Video 
 				try:
-					out = cv2.VideoWriter(fileNameVid, fourcc, 8.7, (640,480), True)
+					out = cv2.VideoWriter(fileNameVid, fourcc, 8.7, (640,480), True) #
 					print('past out')
 
-					initialFrame = frame
-					rangeVid = editLastFrame - initialFrame
-					pd = QProgressDialog("Operation in progress.", "Cancel", 0, 100, self);
-					pd.setWindowTitle("Creating AVI Video...")
-					pd.setWindowModality(Qt.WindowModal)
-					pd.resize(400,100)
-					pd.show()
+					initialFrame = frame #gets the first frame
+					rangeVid = editLastFrame - initialFrame #Gets the range of the frames
+					pd = QProgressDialog("Operation in progress.", "Cancel", 0, 100, self); 
+					pd.setWindowTitle("Creating AVI Video...") #
+					pd.setWindowModality(Qt.WindowModal) #
+					pd.resize(400,100) #Resizes the
+					pd.show() 
 					pd.setValue(0)
-					time.sleep(0.25)
+					time.sleep(0.25) #Quick pause
 
 					for i in range(frame, editLastFrame):
-						print('frame' + str(i))
+						print('frame' + str(i)) #prints what frame is being captured
 
 						percentageComplete = ((i - initialFrame)/rangeVid)*100
 						pd.setValue(percentageComplete)
@@ -286,7 +289,7 @@ class Window(QMainWindow, Ui_MainWindow):
 					self.history.moveCursor(QTextCursor.End)
 					print('Did Not Specify Proper FileName')
 					print('No AVI Video Generated')
-			else:
+			else: #No file was selected
 				self.history.insertPlainText('No AVI Video Generated\n Did Not Specify Proper FileName\n')
 				self.history.moveCursor(QTextCursor.End)
 				print('Did Not Specify Proper FileName')
@@ -311,6 +314,7 @@ class Window(QMainWindow, Ui_MainWindow):
 					self.history.moveCursor(QTextCursor.End)
 				except:
 					self.history.insertPlainText('No PNG Image Generated\n Did Not Specify Proper FileName\n')
+						################################################################################################################################################################
 					self.history.moveCursor(QTextCursor.End)
 					print('Did Not Specify Proper FileName')
 					print('No PNG Image Generated')
@@ -502,8 +506,6 @@ class Window(QMainWindow, Ui_MainWindow):
 				frame -= 1
 			else:
 				print('You are at First Frame')
-			#self.dispImg()
-			#self.canvas.draw()
 			self.sl.setValue(frame)
 
 	#Displays the current frame of video
