@@ -253,9 +253,9 @@ class Window(QMainWindow, Ui_MainWindow):
 					initialFrame = frame #gets the first frame
 					rangeVid = editLastFrame - initialFrame #Gets the range of the frames
 					pd = QProgressDialog("Operation in progress.", "Cancel", 0, 100, self); 
-					pd.setWindowTitle("Creating AVI Video...") #
-					pd.setWindowModality(Qt.WindowModal) #
-					pd.resize(400,100) #Resizes the
+					pd.setWindowTitle("Creating AVI Video...") 
+					pd.setWindowModality(Qt.WindowModal) 
+					pd.resize(400,100) #Resizes the video size
 					pd.show() 
 					pd.setValue(0)
 					time.sleep(0.25) #Quick pause
@@ -263,33 +263,33 @@ class Window(QMainWindow, Ui_MainWindow):
 					for i in range(frame, editLastFrame):
 						print('frame' + str(i)) #prints what frame is being captured
 
-						percentageComplete = ((i - initialFrame)/rangeVid)*100
-						pd.setValue(percentageComplete)
-						if pd.wasCanceled():
+						percentageComplete = ((i - initialFrame)/rangeVid)*100 #Get the percentage of completion of making the video
+						pd.setValue(percentageComplete) # Sets the value to the percentage of completion
+						if pd.wasCanceled():#If video making is stoped everything stops
 							break;
 
-						frameForVid = self.grabDataFrame()
-						out.write(frameForVid)
+						frameForVid = self.grabDataFrame() # Grabs a frame of the video
+						out.write(frameForVid) # Adds frame to the .avi video
 						if frame <= editLastFrame:
 							frame += framerate
 						else:
 							print('You are at Last Frame')
-					out.release()
-					print('out release')
-					print('Saved Video As ' + str(fileNameVid))
-					self.history.insertPlainText('SUCCESS: Saved Video\n')
-					self.history.moveCursor(QTextCursor.End)
+					out.release() # Once done, ends the writing of the video
+					print('out release') 
+					print('Saved Video As ' + str(fileNameVid)) # prints the that the video is done
+					self.history.insertPlainText('SUCCESS: Saved Video\n') #Tell the user the video has been created
+					self.history.moveCursor(QTextCursor.End) 
 
 					pd.setValue(100)
 					time.sleep(1)
 					pd.close()
 
-				except:
+				except: # If anything fails
 					self.history.insertPlainText('No AVI Video Generated\n Did Not Specify Proper FileName\n')
 					self.history.moveCursor(QTextCursor.End)
 					print('Did Not Specify Proper FileName')
 					print('No AVI Video Generated')
-			else: #No file was selected
+			else: #No file was given a proper name
 				self.history.insertPlainText('No AVI Video Generated\n Did Not Specify Proper FileName\n')
 				self.history.moveCursor(QTextCursor.End)
 				print('Did Not Specify Proper FileName')
@@ -301,30 +301,29 @@ class Window(QMainWindow, Ui_MainWindow):
 		global videoState
 		videoState = 'pause'
 		if fileSelected != "":
-			dlg = QFileDialog()
-			#dlg.setNameFilter('PNG files (*.png)')
-			dlg.setDefaultSuffix('.png')
+			dlg = QFileDialog() 
+			dlg.setDefaultSuffix('.png') #Adds the .png at the end of the file making it a image file
 			fileNameImage, filter = dlg.getSaveFileName(self.w, 'Navigate to Directory and Choose a File Name to Save To', fileSelected + '_f' + str(frame) + '_PNG.png', 'PNG Image (*.png)')
 			if fileNameImage != "":
 				try:
 					print(fileNameImage)
-					cv2.imwrite(str(fileNameImage),self.grabDataFrame())
-					print('Saved frame ' + str(frame) + ' as .png')
-					self.history.insertPlainText('SUCCESS: Saved Frame: ' + str(frame) + ' as PNG\n')
+					cv2.imwrite(str(fileNameImage),self.grabDataFrame()) # Gets the frame currently being viewed
+					print('Saved frame ' + str(frame) + ' as .png')# prints that the image is done
+					self.history.insertPlainText('SUCCESS: Saved Frame: ' + str(frame) + ' as PNG\n')# Tells the user the image was created
 					self.history.moveCursor(QTextCursor.End)
-				except:
+				except: #IF anything fails 
 					self.history.insertPlainText('No PNG Image Generated\n Did Not Specify Proper FileName\n')
-						################################################################################################################################################################
+####################HALFWAY############################################################################################################################################
 					self.history.moveCursor(QTextCursor.End)
 					print('Did Not Specify Proper FileName')
 					print('No PNG Image Generated')
-			else:
+			else: #file was given a proper name
 				self.history.insertPlainText('No PNG Image Generated\n Did Not Specify Proper FileName\n')
 				self.history.moveCursor(QTextCursor.End)
 				print('Did Not Specify Proper FileName')
 				print('No PNG Image Generated')
 
-	#
+	#Makes a tiff file
 	def makeTiff2(self):
 		global lastFrame
 		global fileSelected
@@ -332,8 +331,7 @@ class Window(QMainWindow, Ui_MainWindow):
 		videoState = 'pause'
 		if fileSelected != "":
 			dlgTiff = QFileDialog()
-			#dlg.setNameFilter('PNG files (*.png)')
-			dlgTiff.setDefaultSuffix('.tiff')
+			dlgTiff.setDefaultSuffix('.tiff') #Adds the .tiff at the end of the file making it a tiff file
 			fileNameTiff, filter = dlgTiff.getSaveFileName(self.w, 'Navigate to Directory and Choose a File Name to Save To', fileSelected + '_TIFF.tiff', 'TIFF File (*.tiff)')
 			print(fileNameTiff)
 			if fileNameTiff != "":
@@ -341,39 +339,39 @@ class Window(QMainWindow, Ui_MainWindow):
 				self.history.moveCursor(QTextCursor.End)
 				print('Collecting Data Frames...')
 
-				initialFrame = 1
-				rangeVid = lastFrame - initialFrame
+				initialFrame = 1 #first frame is 1
+				rangeVid = lastFrame - initialFrame # gets the frame range
 				pd = QProgressDialog("Operation in progress.", "Cancel", 0, 100, self);
 				pd.setWindowTitle("Creating TIFF File...")
 				pd.setWindowModality(Qt.WindowModal)
-				pd.resize(400,100)
+				pd.resize(400,100) #resizes image
 				pd.show()
 				pd.setValue(0)
-				time.sleep(0.25)
+				time.sleep(0.25)#Quick pause
 
 				for i in range(1,lastFrame):
-					print('Frame to Tiff: ' + str(i))
+					print('Frame to Tiff: ' + str(i)) #Prints what frame is in the process of being add to the .tiff file
 
-					percentageComplete = ((i - initialFrame)/rangeVid)*100
-					pd.setValue(percentageComplete)
+					percentageComplete = ((i - initialFrame)/rangeVid)*100 #Get the percentage of completion of making the video
+					pd.setValue(percentageComplete) # Sets the value to the percentage of completion
 					if pd.wasCanceled():
-						break;
+						break
 
-					data = self.f_read[('image'+str(i))][:]
+					data = self.f_read[('image'+str(i))][:] #Gets the frame
 					if i == 1:
-						dataCollection = data
+						dataCollection = data #adds frame
 					else:
-						dataCollection = np.dstack((dataCollection,data))
+						dataCollection = np.dstack((dataCollection,data)) #adds frame
 					i += 1
-					if i == lastFrame/2:
-						print('Half Way Through File...')
+					if i == lastFrame/2: 
+						print('Half Way Through File...') # prints that the tiff file is halfway done
 				print('Completed Collecting All Data Frames')
-				try:
+				try: #trys to save the .tiff file
 					imsave((str(fileNameTiff)), dataCollection)
 					print('Saved Tiff As ' + str(fileNameTiff))
 					self.history.insertPlainText(' Saved Tiff\n')
 					self.history.moveCursor(QTextCursor.End)
-				except:
+				except: #If anything fails
 					self.history.insertPlainText('No Tiff File Generated\n Did Not Specify Proper FileName\n')
 					self.history.moveCursor(QTextCursor.End)
 					print('Did Not Specify Proper FileName')
@@ -381,7 +379,7 @@ class Window(QMainWindow, Ui_MainWindow):
 				pd.setValue(100)
 				time.sleep(1)
 				pd.close()
-			else:
+			else: #file was given a proper name
 				self.history.insertPlainText('No Tiff File Generated\n Did Not Specify Proper FileName\n')
 				self.history.moveCursor(QTextCursor.End)
 				print('Did Not Specify Proper FileName')
@@ -393,9 +391,9 @@ class Window(QMainWindow, Ui_MainWindow):
 		global fileSelected
 		global xMouse
 		global yMouse
-		data = self.f_read[('image'+str(frame))][:]
-		data = cv2.resize(data[:,:], (640, 480))
-		return data[yMouse, xMouse]
+		data = self.f_read[('image'+str(frame))][:] # Reads what frame currently being view and its temperature
+		data = cv2.resize(data[:,:], (640, 480)) # Resizes the frame
+		return data[yMouse, xMouse] # returns the temperature at the mouse's location
 
 	#Displays the temperature from grabTempValue and checks if the mouse is on the screen
 	def hover(self, event):
@@ -403,22 +401,22 @@ class Window(QMainWindow, Ui_MainWindow):
 		global yMouse
 		global cursorVal
 		if event.xdata != None:
-			xMouse = int(round(event.xdata))
-			yMouse = int(round(event.ydata))
-			cursorVal = int(round(self.grabTempValue()))
-			self.cursorTempLabel.setText('Cursor Temp: ' + readTemp(toggleUnitState, 'none'))
+			xMouse = int(round(event.xdata)) # Gets the mouse's x location
+			yMouse = int(round(event.ydata)) # Gets the mouse's y location
+			cursorVal = int(round(self.grabTempValue())) #Gets the temperature of where the mouse is
+			self.cursorTempLabel.setText('Cursor Temp: ' + readTemp(toggleUnitState, 'none')) # Displays the new cursor temperature
 		else:
-			self.cursorTempLabel.setText('Cursor Temp: MOVE CURSOR OVER IMAGE')
+			self.cursorTempLabel.setText('Cursor Temp: MOVE CURSOR OVER IMAGE') # mouse is not on screen 
 
 	#Changes the displayed max and min temperature and its location on the image
 	def displayTempValues(self):
 		global fileSelected
 		global toggleUnitState
 		if fileSelected != "":
-			self.maxTempLabel.setText('Current Max Temp: ' + readTemp(toggleUnitState, 'max'))
-			self.maxTempLocLabel.setText('Max Temp Loc: ' + str(maxLoc))
-			self.minTempLabel.setText('Current Min Temp: ' + readTemp(toggleUnitState, 'min'))
-			self.minTempLocLabel.setText('Min Temp Loc: ' + str(minLoc))
+			self.maxTempLabel.setText('Current Max Temp: ' + readTemp(toggleUnitState, 'max'))# Displays the current max temperature
+			self.maxTempLocLabel.setText('Max Temp Loc: ' + str(maxLoc))# Displays the max location
+			self.minTempLabel.setText('Current Min Temp: ' + readTemp(toggleUnitState, 'min'))# Displays the current min temperature
+			self.minTempLocLabel.setText('Min Temp Loc: ' + str(minLoc))# Displays the min location
 
 	#Gets the Frame that is currently being view and returns it
 	def grabDataFrame(self):
@@ -426,12 +424,12 @@ class Window(QMainWindow, Ui_MainWindow):
 		global lastFrame
 		global fileSelected
 		global colorMapType
-		data = self.f_read[('image'+str(frame))][:]
-		data = cv2.resize(data[:,:], (640, 480))
-		img = cv2.LUT(raw_to_8bit(data), generate_colour_map(colorMapType))
-		img2 = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-		rgbImage = cv2.cvtColor(img2, cv2.COLOR_BGR2RGB)
-		return(rgbImage)
+		data = self.f_read[('image'+str(frame))][:] #Grabs the frame
+		data = cv2.resize(data[:,:], (640, 480)) # Resizes the frame
+		img = cv2.LUT(raw_to_8bit(data), generate_colour_map(colorMapType)) #Changes it color 
+		img2 = cv2.cvtColor(img, cv2.COLOR_BGR2RGB) 
+		rgbImage = cv2.cvtColor(img2, cv2.COLOR_BGR2RGB) 
+		return(rgbImage) # Returns the frame
 
 	#Starts the video 
 	def play(self):
@@ -441,14 +439,14 @@ class Window(QMainWindow, Ui_MainWindow):
 		global videoState
 		self.history.insertPlainText('Play Video\n')
 		self.history.moveCursor(QTextCursor.End)
-		if self.startEdit.isModified():
-			frame = int(self.startEdit.text())
-			print('Starting at Frame: ' + self.startEdit.text())
-		if self.stopEdit.isModified():
-			editLastFrame = int(self.stopEdit.text())
-		if fileSelected != "":
-			self.timer.start()
-			videoState = 'play'
+		if self.startEdit.isModified(): #
+			frame = int(self.startEdit.text()) # 
+			print('Starting at Frame: ' + self.startEdit.text()) # 
+		if self.stopEdit.isModified(): 
+			editLastFrame = int(self.stopEdit.text()) # Stops if you react the last frame
+		if fileSelected != "": # Starts the video 
+			self.timer.start() #
+			videoState = 'play'  
 
 	#Pauses the video
 	def pauseVideo(self):
