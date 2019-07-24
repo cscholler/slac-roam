@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import (QWidget, QMainWindow, QApplication, QLabel, QPushBu
 from PyQt5.QtWidgets import QInputDialog, QDialog, QLineEdit
 import sys
 import os.path
+
 import cv2
 from tifffile import imsave
 import numpy as np
@@ -23,13 +24,16 @@ import pantilthat
 from subprocess import call
 
 from postFunctions import *
+from ir_v11 import Ui_MainWindow
+from servoErrorWindow import Ui_servoErrorWindow
+from camErrorWindow import Ui_camerrorwindow
 
 print('Loaded Packages and Starting IR Data...')
 
-qtCreatorFile = "ir_v11.ui"  # Enter file here.
+# qtCreatorFile = "ir_v11.ui"  # Enter file here.
 postScriptFileName = "PostProcessIR_v11.py"
 
-Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
+# Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
 # Global variable decleration
 anglePan = 0        # Angle of pantilt Pan servo, range [-90,90]
@@ -58,27 +62,21 @@ def pantiltSetup():
     pantilthat.set_all(0,0,0,0)
     pantilthat.show()
 
-# Definition of Warning and Restart dialog window
-class exitDialog(QDialog):
-    def __init__(self):
-        super(exitDialog.self).__init__()
-        uic.loadUi('exitDialog.ui', self)
-        self.exitButton.clicked.connect(self.exitProgram)
-
-    def exitProgram(self):
-        os.excel(sys.executable, os.path.abspath(__file__), *sys.argv) # When restart button is pressed program will close and restart
-
 # Definition of Servo Error dialog window
 class servoErrorWindow(QDialog):
     def __init__(self):
         super(servoErrorWindow, self).__init__()
-        uic.loadUi('servoErrorWindow.ui', self)
+        # uic.loadUi('servoErrorWindow.ui', self)
+        self.ui = Ui_servoErrorWindow()
+        self.ui.setupUi(self)
 
 # Definition of Camera Error dialog window
 class camErrorWindow(QDialog):
     def __init__(self):
         super(camErrorWindow, self).__init__()
-        uic.loadUi('camErrorWindow.ui', self)
+        # uic.loadUi('camErrorWindow.ui', self)
+        self.ui = Ui_camerrorwindow()
+        self.ui.setupUi(self)
 
 # Function for frame storage
 def py_frame_callback(frame, userptr):
@@ -326,16 +324,18 @@ class MyThread(QThread):
             frame = getFrame() # Getting the thermal camera frame
             rgbImage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # Converts the thermal frame into an image
             resizedIR = cv2.resize(rgbImage, (640, 480)) # Resize so that they have the same size
-
+            rows,cols,c = resizedIR.shape
             # If the webcam is on, shows the overlay
             if onWebcam == True:
                 framecam = self.getWebcamFrame() # Getting the webcam's frame
                 camImage = cv2.cvtColor(framecam, cv2.COLOR_BGR2RGB) # Converts the webcam frame into an image
                 rotatedCam = cv2.flip(camImage, -1) # Flip the webcam image
                 resizedCam = cv2.resize(rotatedCam, (640, 480)) # Resizes webcam image
-
+                # resizedCam.set(cv2.CAP_PROP_FPS, 9)
+                M = np.float32([[1,0,30],[0,1,-5]])
+                dst = cv2.warpAffine(resizedIR,M,(cols,rows))
                 # Creates overlay image
-                image = cv2.addWeighted(resizedCam, (alpha*.1), resizedIR, (beta*.1), 0.0)	# Overlay camera feeds
+                image = cv2.addWeighted(resizedCam, (alpha*.1), dst, (beta*.1), 0.0)	# Overlay camera feeds
 
                 # Getting the overlay image info
                 h, w, channel = image.shape
