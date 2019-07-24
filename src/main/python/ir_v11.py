@@ -341,3 +341,6 @@ class Ui_MainWindow(object):
         self.comboGain.setItemText(2, _translate("MainWindow", "AUTO"))
         self.vidBalance.setText(_translate("MainWindow", "IR                               Video Balance                     Webcam"))
 
+
+
+

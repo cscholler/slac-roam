@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 # Author: Karl Parks, 2018
 
-from PyQt5 import QtCore, QtGui, uic
+from fbs_runtime.application_context.PyQt5 import ApplicationContext
+
+from PyQt5 import QtCore, QtGui, uic, QtWidgets
 print('Successful import of uic') #often reinstallation of PyQt5 is required
 
 from PyQt5.QtCore import (QCoreApplication, QThread, QThreadPool, pyqtSignal, pyqtSlot, Qt, QTimer, QDateTime)
 from PyQt5.QtGui import (QImage, QPixmap, QTextCursor)
 from PyQt5.QtWidgets import (QWidget, QMainWindow, QApplication, QLabel, QPushButton, QVBoxLayout, QGridLayout, QSizePolicy, QMessageBox, QFileDialog, QSlider, QComboBox, QProgressDialog)
-from PyQt5.QtWidgets import QInputDialog, QDialog, QLineEdit
 import sys
 import os.path
 import cv2
@@ -23,13 +24,16 @@ import pantilthat
 from subprocess import call
 
 from postFunctions import *
+from ir_v11 import Ui_MainWindow
+from servoErrorWindow import Ui_servoErrorWindow
+from camErrorWindow import Ui_camerrorwindow
+from exitDialog import Ui_Dialog
+import PostProcessIR_v11
+
+
 
 print('Loaded Packages and Starting IR Data...')
 
-qtCreatorFile = "ir_v11.ui"  # Enter file here.
-postScriptFileName = "PostProcessIR_v11.py"
-
-Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
 # Global variable decleration
 anglePan = 0        # Angle of pantilt Pan servo, range [-90,90]
@@ -58,27 +62,17 @@ def pantiltSetup():
     pantilthat.set_all(0,0,0,0)
     pantilthat.show()
 
-# Definition of Warning and Restart dialog window
-class exitDialog(QDialog):
-    def __init__(self):
-        super(exitDialog.self).__init__()
-        uic.loadUi('exitDialog.ui', self)
-        self.exitButton.clicked.connect(self.exitProgram)
+# # Definition of Servo Error dialog window
+# class servoErrorWindow(QDialog):
+#     def __init__(self):
+#         super(servoErrorWindow, self).__init__()
+#         uic.loadUi('servoErrorWindow.ui', self)
 
-    def exitProgram(self):
-        os.excel(sys.executable, os.path.abspath(__file__), *sys.argv) # When restart button is pressed program will close and restart
-
-# Definition of Servo Error dialog window
-class servoErrorWindow(QDialog):
-    def __init__(self):
-        super(servoErrorWindow, self).__init__()
-        uic.loadUi('servoErrorWindow.ui', self)
-
-# Definition of Camera Error dialog window
-class camErrorWindow(QDialog):
-    def __init__(self):
-        super(camErrorWindow, self).__init__()
-        uic.loadUi('camErrorWindow.ui', self)
+# # Definition of Camera Error dialog window
+# class camErrorWindow(QDialog):
+#     def __init__(self):
+#         super(camErrorWindow, self).__init__()
+#         uic.loadUi('camErrorWindow.ui', self)
 
 # Function for frame storage
 def py_frame_callback(frame, userptr):
@@ -593,13 +587,10 @@ class App(QMainWindow, Ui_MainWindow):
 
     # Running the Post Process file
     def runPostScript(self):
-    	try:
-    		def thread_second():
-    	    		call(["python3", postScriptFileName])
-    		processThread = threading.Thread(target=thread_second)  # <- note extra ','
-    		processThread.start()
-    	except:
-    		print('Post Processing Script Error - Most Likely Referencing Incorrect File Name')
+        try:
+            PostProcessIR_v11.main()
+        except:
+            print('Post Processing Script Error - Most Likely Referencing Incorrect File Name')
 
     # Displaying the temperature in Celsius
     def dispCDef(self):
@@ -706,14 +697,20 @@ class App(QMainWindow, Ui_MainWindow):
             event.accept()
 
     # Call dialog box for servo error
-    def servo_error(self):
-        self.servoerr = servoErrorWindow()  # Call servo error dialog box
-        self.servoerr.show()                # Display servo error dialog box
+    def servo_error(self, servoErrorWindow):
+        servoErrorWindow = QtWidgets.QDialog()
+        ui = Ui_servoErrorWindow()
+        ui.setupUi(servoErrorWindow)
+        servoErrorWindow.show()
+        servoErrorWindow.exec_()
 
     # Call dialog box for camera error
     def cam_error(self):
-        self.camerr = camErrorWindow()  # Call camera error dialog box
-        self.camerr.show()              # Display camera error dialog box
+        camerrorwindow = QtWidgets.QDialog()
+        ui = Ui_camerrorwindow()
+        ui.setupUi(camerrorwindow)
+        camerrorwindow.show()
+        camerrorwindow.exec_()
 
     # Pantilt controller tilt up
     def moveUp(self):

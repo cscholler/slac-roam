@@ -19,9 +19,7 @@ import time
 import re
 print('Successful import of all libraries')
 
-qtCreatorFile = "ir_post_v2.ui"  # Enter UI file here.
-
-Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
+from ir_post_v2 import Ui_MainWindow
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
