@@ -27,11 +27,12 @@ from postFunctions import *
 from ir_v11 import Ui_MainWindow
 from servoErrorWindow import Ui_servoErrorWindow
 from camErrorWindow import Ui_camerrorwindow
+import PostProcessIR_v11
 
 print('Loaded Packages and Starting IR Data...')
 
 # qtCreatorFile = "ir_v11.ui"  # Enter file here.
-postScriptFileName = "PostProcessIR_v11.py"
+# postScriptFileName = "PostProcessIR_v11.py"
 
 # Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
@@ -324,18 +325,16 @@ class MyThread(QThread):
             frame = getFrame() # Getting the thermal camera frame
             rgbImage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # Converts the thermal frame into an image
             resizedIR = cv2.resize(rgbImage, (640, 480)) # Resize so that they have the same size
-            rows,cols,c = resizedIR.shape
+
             # If the webcam is on, shows the overlay
             if onWebcam == True:
                 framecam = self.getWebcamFrame() # Getting the webcam's frame
                 camImage = cv2.cvtColor(framecam, cv2.COLOR_BGR2RGB) # Converts the webcam frame into an image
                 rotatedCam = cv2.flip(camImage, -1) # Flip the webcam image
                 resizedCam = cv2.resize(rotatedCam, (640, 480)) # Resizes webcam image
-                # resizedCam.set(cv2.CAP_PROP_FPS, 9)
-                M = np.float32([[1,0,30],[0,1,-5]])
-                dst = cv2.warpAffine(resizedIR,M,(cols,rows))
+
                 # Creates overlay image
-                image = cv2.addWeighted(resizedCam, (alpha*.1), dst, (beta*.1), 0.0)	# Overlay camera feeds
+                image = cv2.addWeighted(resizedCam, (alpha*.1), resizedIR, (beta*.1), 0.0)	# Overlay camera feeds
 
                 # Getting the overlay image info
                 h, w, channel = image.shape
@@ -594,10 +593,11 @@ class App(QMainWindow, Ui_MainWindow):
     # Running the Post Process file
     def runPostScript(self):
     	try:
-    		def thread_second():
-    	    		call(["python3", postScriptFileName])
-    		processThread = threading.Thread(target=thread_second)  # <- note extra ','
-    		processThread.start()
+    		# def thread_second():
+    	    	#	call(["python3", postScriptFileName])
+            PostProcessIR_v11.main()
+            # processThread = threading.Thread(target=thread_second)  # <- note extra ','
+            # processThread.start()
     	except:
     		print('Post Processing Script Error - Most Likely Referencing Incorrect File Name')
 
