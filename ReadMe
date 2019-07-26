@@ -1,0 +1,2 @@
+In order to use the OverLay startup
+Change the "Exec" Part in the Overlay to the path of main.py in the OverlayPythonFiles folder
