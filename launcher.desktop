@@ -1,5 +1,0 @@
-[Desktop Entry]
-Version = 1.0
-Name=Overlay
-Exec= /home/roamadmin/Documents/integration-testing/OverlayPythonFiles/main.py
-Type=Application
