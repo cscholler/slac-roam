@@ -1,2 +1,3 @@
 In order to use the OverLay startup
+Git clone this branch in Documents
 Change the "Exec" Part in the Overlay to the path of main.py in the OverlayPythonFiles folder
