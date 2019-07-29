@@ -7,7 +7,7 @@ install_app(){
 	cd integration-testing
 	fbs freeze
 	fbs installer
-	sudo dpkg -i target/testapp.deb
+	sudo dpkg -i target/Overlay Application.deb
 }
 
 
