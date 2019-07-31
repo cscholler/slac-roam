@@ -359,6 +359,7 @@ thread = "unactive"
 saveFilePath = ""
 fileNamingFull = ""
 bFile = ""
+
 class App(QMainWindow, Ui_MainWindow):
     # Setting up the UI of the main window
     def __init__(self):
@@ -722,38 +723,41 @@ class App(QMainWindow, Ui_MainWindow):
 
         if self.upButton.isEnabled():       # Check if button is currently held down
             if angleTilt > -90:             # Move only if current position is greater than servo lower bound
-                angleTilt -= 10             # Adjust tilt angle by 10 degrees
+                angleTilt -= 5             # Adjust tilt angle by 10 degrees
                 pantilthat.tilt(angleTilt)  # Update tilt servo position
-      
+    
+    
     # Pantilt controller tilt down
     def moveDown(self):
         # Global variable to be used
         global angleTilt
-
+        
         if self.downButton.isEnabled():     # Check if button is currently held down
-            if angleTilt < 90:              # Move only if current position is less than servo upper bound
-                angleTilt += 10             # Adjust tilt angle by 10 degrees
+            if angleTilt <= 45:              # Move only if current position is less than servo upper bound
+                angleTilt += 5             # Adjust tilt angle by 10 degrees
                 pantilthat.tilt(angleTilt)  # Update tilt servo positon
+            
 
     # Pantilt controller pan left
     def moveLeft(self):
         # Global variable to be used
         global anglePan
-
+        
         if self.leftButton.isEnabled():     # Check if button is currently held down
             if anglePan < 90:               # Move only if current position is less than servo upper bound
-                anglePan += 10              # Adjust pan angle by 10 degrees
+                anglePan += 5              # Adjust pan angle by 10 degrees
                 pantilthat.pan(anglePan)    # Update pan servo position
 
     # Pantilt controller pan right
     def moveRight(self):
         # Global variable to be used
         global anglePan
-
+        
         if self.rightButton.isEnabled():    # Check if button is currently held down
             if anglePan > -90:              # Move only if current position is greater than servo upper bound
-                anglePan -= 10              # Adjust pan angle by 10 degrees
+                anglePan -= 5              # Adjust pan angle by 10 degrees
                 pantilthat.pan(anglePan)    # Update pan servo position
+            
 
     # Pantilt LED brightness adjustment
     def LEDBrightness(self):
