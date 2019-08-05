@@ -18,8 +18,11 @@ from tifffile import imsave
 import time
 import re
 print('Successful import of all libraries')
-
 from ir_post_v2 import Ui_MainWindow
+
+# qtCreatorFile = "ir_post_v2.ui"  # Enter UI file here.
+
+# Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
@@ -616,12 +619,16 @@ class Window(QMainWindow, Ui_MainWindow):
 			self.history.insertPlainText('ERROR: Incorrect File Type Selected\n Please select .HDF5 File\n')
 			self.history.moveCursor(QTextCursor.End)
 			print('Incorrect File Type Selected. Please select .HDF5 File.')
+	
+	def closeEvent(self,event):
+		print("Close Event Called.")
+		QApplication.exit()
 
 def main():
-    app = QApplication(sys.argv)
-    main = Window()
-    main.show()
-    sys.exit(app.exec_())
+	app = QApplication(sys.argv)
+	main = Window()
+	main.show()
+	sys.exit(app.exec_())
 
 if __name__ == '__main__':
     main()
