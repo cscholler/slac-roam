@@ -18,7 +18,7 @@ from tifffile import imsave
 import time
 import re
 print('Successful import of all libraries')
-from ir_post_v2 import Ui_MainWindow
+from post import Ui_MainWindow
 
 # qtCreatorFile = "ir_post_v2.ui"  # Enter UI file here.
 
@@ -620,9 +620,9 @@ class Window(QMainWindow, Ui_MainWindow):
 			self.history.moveCursor(QTextCursor.End)
 			print('Incorrect File Type Selected. Please select .HDF5 File.')
 	
-	def closeEvent(self,event):
-		print("Close Event Called.")
-		QApplication.exit()
+	# def closeEvent(self,event):
+	# 	print("Close Event Called.")
+	# 	QApplication.exit()
 
 def main():
 	app = QApplication(sys.argv)

@@ -25,7 +25,9 @@ from subprocess import call
 
 from postFunctions import *
 from ir_v11 import Ui_MainWindow
-from ir_post_v2 import Ui_Form
+# from ir_post_v2_FORM import Ui_Form
+from ir_post_v2 import Ui_PostProcessIR
+
 from servoErrorWindow import Ui_servoErrorWindow
 from camErrorWindow import Ui_camerrorwindow
 # from PostProcessIR_v11 import mainpost
@@ -109,7 +111,7 @@ class camErrorWindow(QDialog):
 class callPostScript(QWidget):
     def __init__(self):
         super(callPostScript, self).__init__()
-        self.ui = Ui_Form()
+        self.ui = Ui_PostProcessIR()
         self.ui.setupUi(self)
         self.initUI()
 
@@ -339,7 +341,7 @@ class callPostScript(QWidget):
 
                 initialFrame = 1 #first frame is 1
                 rangeVid = lastFrame - initialFrame # gets the frame range
-                pd = QProgressDialog("Operation in progress.", "Cancel", 0, 100, self);
+                pd = QProgressDialog("Operation in progress.", "Cancel", 0, 100, self)
                 pd.setWindowTitle("Creating TIFF File...")
                 pd.setWindowModality(Qt.WindowModal)
                 pd.resize(400,100) #resizes image
@@ -1170,10 +1172,11 @@ class App(QMainWindow, Ui_MainWindow):
         self.post = callPostScript()
         self.post.show()
         print("Running Post Process Script.")
+
     	# try:
             
     	# 	# def thread_second():
-    	#     	#	call(["python3", postScriptFileName])
+    	#     # 	call(["python3", postScriptFileName])
         #     # mainpost()
         #     # processThread = threading.Thread(target=thread_second)  # <- note extra ','
         #     # processThread.start()
