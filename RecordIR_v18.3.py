@@ -108,6 +108,8 @@ class camErrorWindow(QDialog):
         self.ui = Ui_camerrorwindow()
         self.ui.setupUi(self)
 
+rotationCode = 0
+checkRot = False
 class callPostScript(QWidget):
     def __init__(self):
         super(callPostScript, self).__init__()
@@ -165,6 +167,7 @@ class callPostScript(QWidget):
 
         if (len(sys.argv) > 1):
             self.getFile()
+
 
 	#cmIronFunc changes the Color of the video to ironblack
     def cmIronFunc(self):
@@ -418,17 +421,20 @@ class callPostScript(QWidget):
             self.ui.minTempLabel.setText('Current Min Temp: ' + readTemp(toggleUnitState, 'min'))# Displays the current min temperature
             self.ui.minTempLocLabel.setText('Min Temp Loc: ' + str(minLoc))# Displays the min location
 
+
 	#Gets the Frame that is currently being view and returns it
     def grabDataFrame(self):
         global frame
         global lastFrame
         global fileSelected
         global colorMapType
+        # global rotationCode
+        # global checkRot
         data = self.f_read[('image'+str(frame))][:] #Grabs the frame
         data = cv2.resize(data[:,:], (640, 480)) # Resizes the frame
         img = cv2.LUT(raw_to_8bit(data), generate_colour_map(colorMapType)) #Changes it color 
         img2 = cv2.cvtColor(img, cv2.COLOR_BGR2RGB) 
-        rgbImage = cv2.cvtColor(img2, cv2.COLOR_BGR2RGB) 
+        rgbImage = cv2.cvtColor(img2, cv2.COLOR_BGR2RGB)
         return(rgbImage) # Returns the frame
 
 	#Starts the video 
@@ -574,6 +580,7 @@ class callPostScript(QWidget):
         self.ui.displayC.setEnabled(True)
         self.ui.displayF.setEnabled(True)
         self.ui.tempScaleBut.setEnabled(True)
+        self.ui.rotButton.setEnabled(True)
 
 	#Gets and Checks the HDF5 video file
     def getFile(self):
@@ -855,6 +862,13 @@ def updateMaxTempLabel():
 # Determined to be changed later
 alpha = 5   # RGB Camera opacity
 beta = 5    # IR Camera opacity
+angle = 0
+def rotateVid():
+    global checkRot
+    global angle
+    if checkRot == False:
+        checkRot = True
+        angle += 90
 
 # Class that includes the streaming functionality
 class MyThread(QThread):
@@ -862,7 +876,8 @@ class MyThread(QThread):
     def run(self):
         global alpha
         global beta
-
+        global checkRot
+        global angle
         print('Start Stream')
         
         # Trying to open the webcam
@@ -895,35 +910,68 @@ class MyThread(QThread):
             print("Webcam opened!")
             print("Showing both cameras ...")
             onWebcam = True
-
+        
         # While camera stream is running overlay cameras
         while True:
             frame = getFrame() # Getting the thermal camera frame
             rgbImage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # Converts the thermal frame into an image
-            resizedIR = cv2.resize(rgbImage, (640, 480)) # Resize so that they have the same size
+            rotatedIR = cv2.flip(rgbImage, -1)
+            resizedIR = cv2.resize(rotatedIR, (640, 480)) # Resize so that they have the same size
 
             # If the webcam is on, shows the overlay
             if onWebcam == True:
                 framecam = self.getWebcamFrame() # Getting the webcam's frame
                 camImage = cv2.cvtColor(framecam, cv2.COLOR_BGR2RGB) # Converts the webcam frame into an image
-                rotatedCam = cv2.flip(camImage, -1) # Flip the webcam image
-                resizedCam = cv2.resize(rotatedCam, (640, 480)) # Resizes webcam image
+                # rotatedCam = cv2.flip(camImage, -1) # Flip the webcam image
+                resizedCam = cv2.resize(camImage, (640, 480)) # Resizes webcam image
 
                 # Creates overlay image
                 image = cv2.addWeighted(resizedCam, (alpha*.1), resizedIR, (beta*.1), 0.0)	# Overlay camera feeds
 
-                # Getting the overlay image info
-                h, w, channel = image.shape
-                step = channel * w
-                # Uses the info above to convert the image into the Qt format
-                convertToQtFormat = QImage(image.data, image.shape[1], image.shape[0], step, QImage.Format_RGB888)
+                if checkRot == True:
+                    (h,w) = image.shape[:2]
+                    (cX, cY) = (w // 2, h // 2)
+                    M = cv2.getRotationMatrix2D((cX, cY), -angle, 1.0)
+                    cos = np.abs(M[0, 0])
+                    sin = np.abs(M[0, 1])
+                    nW = int((h * sin) + (w * cos))
+                    nH = int((h * cos) + (w * sin))
+                    M[0, 2] += (nW / 2) - cX
+                    M[1, 2] += (nH / 2) - cY
+                    rotatedImg = cv2.warpAffine(image, M, (nW, nH))
+                    # rotatedImg = cv2.rotate(resizedIR, 0)
+                    h, w, channel = rotatedImg.shape
+                    step = channel * w
+                    convertToQtFormat = QImage(rotatedImg.data, rotatedImg.shape[1], rotatedImg.shape[0], step, QImage.Format_RGB888)
+                else:
+                    # Getting the overlay image info
+                    h, w, channel = image.shape
+                    step = channel * w
+                    # Uses the info above to convert the image into the Qt format
+                    convertToQtFormat = QImage(image.data, image.shape[1], image.shape[0], step, QImage.Format_RGB888)
             
             # If the webcam is not on, shows the resized IR camera
-            elif onWebcam == False: 
-                convertToQtFormat = QImage(resizedIR.data, resizedIR.shape[1], resizedIR.shape[0], QImage.Format_RGB888)
+            elif onWebcam == False:
+                if checkRot == True:
+                    (h,w) = resizedIR.shape[:2]
+                    (cX, cY) = (w // 2, h // 2)
+                    M = cv2.getRotationMatrix2D((cX, cY), -angle, 1.0)
+                    cos = np.abs(M[0, 0])
+                    sin = np.abs(M[0, 1])
+                    nW = int((h * sin) + (w * cos))
+                    nH = int((h * cos) + (w * sin))
+                    M[0, 2] += (nW / 2) - cX
+                    M[1, 2] += (nH / 2) - cY
+                    rotatedImg = cv2.warpAffine(resizedIR, M, (nW, nH))
+                    # rotatedImg = cv2.rotate(resizedIR, 0)
+                    h, w, channel = rotatedImg.shape
+                    step = channel * w
+                    convertToQtFormat = QImage(rotatedImg.data, rotatedImg.shape[1], rotatedImg.shape[0], step, QImage.Format_RGB888)
+                else:
+                    convertToQtFormat = QImage(resizedIR.data, resizedIR.shape[1], resizedIR.shape[0], QImage.Format_RGB888)
 
             self.changePixmap.emit(convertToQtFormat) # Emits the image in Qt format
-
+        
         self.cam.release() # WHen the application is done, release the webcam
     
     # Getting webcam frame
@@ -967,7 +1015,7 @@ class App(QMainWindow, Ui_MainWindow):
         self.runPost.clicked.connect(self.runPostScript)
         self.startStreamBut.clicked.connect(self.startThread)
         self.displayFrame.mousePressEvent = self.on_press
-
+        self.rotateBut.clicked.connect(self.rotate)
         self.w = QWidget()
         self.filePathBut.clicked.connect(self.getFiles)
 
@@ -1009,6 +1057,12 @@ class App(QMainWindow, Ui_MainWindow):
         # Implementation of pantilt error resolution dialogs
         self.servoerror.clicked.connect(self.servo_error)
         self.camerror.clicked.connect(self.cam_error)
+    
+    def rotate(self):
+        global checkRot
+        checkRot = False
+        rotateVid()
+        print("Rotated")
 
     # Overlay opacity adjustment					
     def opacityValue(self):
