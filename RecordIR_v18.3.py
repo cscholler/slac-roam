@@ -59,7 +59,6 @@ from postFunctions import *
 
 toggleUnitState = 'F' # Default unit of temperature
 
-
 # qtCreatorFile = "ir_v11.ui"  # Enter file here.
 # postScriptFileName = "PostProcessIR_v11.py"
 
@@ -627,7 +626,7 @@ class callPostScript(QWidget):
             self.ui.history.moveCursor(QTextCursor.End)
             print('Incorrect File Type Selected. Please select .HDF5 File.')
 
-rotateCode = 270
+rotateCode = 0
 
 # Function for frame storage
 def py_frame_callback(frame, userptr):
@@ -638,11 +637,11 @@ def py_frame_callback(frame, userptr):
         array_pointer.contents, dtype=np.dtype(np.uint16)).reshape(frame.contents.height, frame.contents.width)
     if checkRot == True:
         if rotateCode == 90:
-            data = np.rot90(data, 3)
+            data = np.rot90(data, 1)
         elif rotateCode == 180:
             data = np.rot90(data, 2)
         elif rotateCode == 270:
-            data = np.rot90(data, 1)
+            data = np.rot90(data, 3)
         if frame.contents.data_bytes != (2 * frame.contents.width * frame.contents.height):
             return
         if not q.full():
@@ -879,13 +878,24 @@ def updateMaxTempLabel():
 # Determined to be changed later
 alpha = 5   # RGB Camera opacity
 beta = 5    # IR Camera opacity
-angle = 0
+
 def rotateVid():
     global checkRot
-    global angle
+    global rotateCode
     if checkRot == False:
         checkRot = True
-        angle += 90
+    if rotateCode == 0:
+        rotateCode = 90
+        return
+    elif rotateCode == 90:
+        rotateCode = 180
+        return
+    elif rotateCode ==180:
+        rotateCode = 270
+        return
+    elif rotateCode ==270:
+        rotateCode = 0
+        return
 
 # Class that includes the streaming functionality
 class MyThread(QThread):
@@ -894,7 +904,6 @@ class MyThread(QThread):
         global alpha
         global beta
         global checkRot
-        global angle
         print('Start Stream')
         
         # Trying to open the webcam
@@ -932,59 +941,45 @@ class MyThread(QThread):
         while True:
             frame = getFrame() # Getting the thermal camera frame
             rgbImage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # Converts the thermal frame into an image
-            # rotatedIR = cv2.flip(rgbImage, -1)
             resizedIR = cv2.resize(rgbImage, (640, 480)) # Resize so that they have the same size
 
             # If the webcam is on, shows the overlay
             if onWebcam == True:
                 framecam = self.getWebcamFrame() # Getting the webcam's frame
                 camImage = cv2.cvtColor(framecam, cv2.COLOR_BGR2RGB) # Converts the webcam frame into an image
-                # rotatedCam = cv2.flip(camImage, -1) # Flip the webcam image
-                resizedCam = cv2.resize(camImage, (640, 480)) # Resizes webcam image
+                rotatedCam = cv2.flip(camImage, -1) # Flip the webcam image
+                resizedCam = cv2.resize(rotatedCam, (640, 480)) # Resizes webcam image
 
-                # Creates overlay image
-                image = cv2.addWeighted(resizedCam, (alpha*.1), resizedIR, (beta*.1), 0.0)	# Overlay camera feeds
-
-                # if checkRot == True:
-                #     (h,w) = image.shape[:2]
-                #     (cX, cY) = (w // 2, h // 2)
-                #     M = cv2.getRotationMatrix2D((cX, cY), -angle, 1.0)
-                #     cos = np.abs(M[0, 0])
-                #     sin = np.abs(M[0, 1])
-                #     nW = int((h * sin) + (w * cos))
-                #     nH = int((h * cos) + (w * sin))
-                #     M[0, 2] += (nW / 2) - cX
-                #     M[1, 2] += (nH / 2) - cY
-                #     rotatedImg = cv2.warpAffine(image, M, (nW, nH))
-                #     # rotatedImg = cv2.rotate(resizedIR, 0)
-                #     h, w, channel = rotatedImg.shape
-                #     step = channel * w
-                #     convertToQtFormat = QImage(rotatedImg.data, rotatedImg.shape[1], rotatedImg.shape[0], step, QImage.Format_RGB888)
-                # else:
+                if checkRot == True:
+                    (h,w) = resizedCam.shape[:2]
+                    (cX, cY) = (w // 2, h // 2)
+                    M = cv2.getRotationMatrix2D((cX, cY), rotateCode, 1.0)
+                    cos = np.abs(M[0, 0])
+                    sin = np.abs(M[0, 1])
+                    nW = int((h * sin) + (w * cos))
+                    nH = int((h * cos) + (w * sin))
+                    M[0, 2] += (nW / 2) - cX
+                    M[1, 2] += (nH / 2) - cY
+                    rotatedImg = cv2.warpAffine(resizedCam, M, (nW, nH))
+                    rotatedImg = cv2.resize(rotatedImg, (640, 480))
+                    try:
+                        rotatedImg = cv2.addWeighted(rotatedImg, (alpha*.1), resizedIR, (beta*.1), 0.0)
+                    except:
+                        print("Images are not the same dimensions")
+                    h, w, channel = rotatedImg.shape
+                    step = channel * w
+                    convertToQtFormat = QImage(rotatedImg.data, rotatedImg.shape[1], rotatedImg.shape[0], step, QImage.Format_RGB888)
+                else:
+                    # Creates overlay image
+                    image = cv2.addWeighted(resizedCam, (alpha*.1), resizedIR, (beta*.1), 0.0)	# Overlay camera feeds
                     # Getting the overlay image info
-                h, w, channel = image.shape
-                step = channel * w
-                # Uses the info above to convert the image into the Qt format
-                convertToQtFormat = QImage(image.data, image.shape[1], image.shape[0], step, QImage.Format_RGB888)
+                    h, w, channel = image.shape
+                    step = channel * w
+                    # Uses the info above to convert the image into the Qt format
+                    convertToQtFormat = QImage(image.data, image.shape[1], image.shape[0], step, QImage.Format_RGB888)
             
             # If the webcam is not on, shows the resized IR camera
             elif onWebcam == False:
-                # if checkRot == True:
-                #     (h,w) = resizedIR.shape[:2]
-                #     (cX, cY) = (w // 2, h // 2)
-                #     M = cv2.getRotationMatrix2D((cX, cY), -angle, 1.0)
-                #     cos = np.abs(M[0, 0])
-                #     sin = np.abs(M[0, 1])
-                #     nW = int((h * sin) + (w * cos))
-                #     nH = int((h * cos) + (w * sin))
-                #     M[0, 2] += (nW / 2) - cX
-                #     M[1, 2] += (nH / 2) - cY
-                #     rotatedImg = cv2.warpAffine(resizedIR, M, (nW, nH))
-                #     # rotatedImg = cv2.rotate(resizedIR, 0)
-                #     h, w, channel = rotatedImg.shape
-                #     step = channel * w
-                #     convertToQtFormat = QImage(rotatedImg.data, rotatedImg.shape[1], rotatedImg.shape[0], step, QImage.Format_RGB888)
-                # else:
                 convertToQtFormat = QImage(resizedIR.data, resizedIR.shape[1], resizedIR.shape[0], QImage.Format_RGB888)
 
             self.changePixmap.emit(convertToQtFormat) # Emits the image in Qt format
@@ -1080,6 +1075,7 @@ class App(QMainWindow, Ui_MainWindow):
         checkRot = False
         rotateVid()
         print("Rotated")
+        print(rotateCode)
 
     # Overlay opacity adjustment					
     def opacityValue(self):
