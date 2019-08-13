@@ -1415,7 +1415,10 @@ class App(QMainWindow, Ui_MainWindow):
 
 def main():
     app = QApplication(sys.argv)
-    pantiltSetup()                  # Initialize pantilt modules
+    try:
+        pantiltSetup()                  # Initialize pantilt modules
+    except:
+        print("No Servo")
     window = App()
     window.show()
     sys.exit(app.exec_())
