@@ -229,7 +229,26 @@ def main():
     startStream()
     while True:
         cam, data = getFrame()
+<<<<<<< HEAD
         minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(data)
+=======
+
+        x, y, a, b = 5, 10, 40, 50
+        cv2.rectangle(cam, (x,y), (x+a,y+b), (255,0,0), 2)
+
+        maxTemp = 0
+        j = y
+        while j < y+b:
+            i = x
+            while i < x+a:
+                if data[i,j] > maxTemp:
+                    maxTemp = data[i,j]
+                i += 1
+            j += 1
+
+
+        print(maxTemp)
+>>>>>>> 31978f5b5aa9ed374fc568c41388a52e428bb721
         cam = cv2.resize(cam, (640, 480))
         print(readTemp(toggleUnitState, 'max'))
         print(readTemp(toggleUnitState, 'min'))
