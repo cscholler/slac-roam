@@ -111,6 +111,7 @@ def py_frame_callback(frame, userptr):
     data = np.frombuffer(
     array_pointer.contents, dtype=np.dtype(np.uint16)).reshape(frame.contents.height, frame.contents.width)
     data = np.rot90(data, 2)
+    data = cv2.resize(data[:,:], (640, 480)) 
     if frame.contents.data_bytes != (2 * frame.contents.width * frame.contents.height):
         return
     if not q.full():
@@ -181,12 +182,11 @@ def raw_to_8bit(data):
     cv2.normalize(data, data, 0, 65535, cv2.NORM_MINMAX)    # Normalise data to facilitate conversion
     np.right_shift(data, 8, data)                           # Shifts data for conversion
     return cv2.cvtColor(np.uint8(data), cv2.COLOR_GRAY2RGB)
-maxVal = 0                  # Maximum temperature visable in frame              
-minVal = 0 
+
 
 # Functions that converts a frame's data into an image
 def getFrame():
-    global maxValq
+    global maxVal
     global minVal
     global data
     data = q.get(True, 500) # Data format for dataset
@@ -197,14 +197,49 @@ def getFrame():
     img = cv2.LUT(raw_to_8bit(data), generate_colour_map(0))
     return img, data
 
+def ktof(val):
+    return round(((1.8 * ktoc(val) + 32.0)), 2)
+
+# Kelvin to Celsius conversion
+def ktoc(val):
+    return round(((val - 27315) / 100.0), 2)
+
+def readTemp(unit, state):
+    # Reads the maximum temperature
+    if state == 'max':
+        if unit == 'F':
+            return (str(ktof(maxVal)) + ' ' + unit)
+        elif unit == 'C':
+            return (str(ktoc(maxVal)) + ' ' + unit)
+        else:
+            print('What are you asking for?')
+    # Reads the minimum temperature
+    elif state == 'min':
+        if unit == 'F':
+            return (str(ktof(minVal)) + ' ' + unit)
+        elif unit == 'C':
+            return (str(ktoc(minVal)) + ' ' + unit)
+        else:
+            print('What are you asking for?')
+    # Reads the temperature at the cursor's location
+    else:
+        print('What are you asking for?')
+toggleUnitState = 'F'
 def main():
     startStream()
     while True:
         cam, data = getFrame()
-        print(data[0,0])
+        minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(data)
         cam = cv2.resize(cam, (640, 480))
+        print(readTemp(toggleUnitState, 'max'))
+        print(readTemp(toggleUnitState, 'min'))
+        print(" ")
+        print('Max Temp Loc: ' + str(maxLoc))
+        print('Min Temp Loc: ' + str(minLoc))
+        # print("Temp at 0,0" + ktof(data[0,0]))
+        print(" ")
+        cv2.rectangle(cam,(maxLoc),(minLoc),(255,255,0),5)
         cv2.imshow("Both",cam)
-                            
         if cv2.waitKey(1) == ord('q'):
             break
     # When everything done, release the capture
