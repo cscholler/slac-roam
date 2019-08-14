@@ -201,7 +201,22 @@ def main():
     startStream()
     while True:
         cam, data = getFrame()
-        print(data[0,0])
+
+        x, y, a, b = 5, 10, 40, 50
+        cv2.rectangle(cam, (x,y), (x+a,y+b), (255,0,0), 2)
+
+        maxTemp = 0
+        j = y
+        while j < y+b:
+            i = x
+            while i < x+a:
+                if data[i,j] > maxTemp:
+                    maxTemp = data[i,j]
+                i += 1
+            j += 1
+
+
+        print(maxTemp)
         cam = cv2.resize(cam, (640, 480))
         cv2.imshow("Both",cam)
                             
