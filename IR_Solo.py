@@ -105,8 +105,6 @@ def generate_colour_map(num):
 
 
 def py_frame_callback(frame, userptr):
-    global checkRot
-    global rotateCode
     array_pointer = cast(frame.contents.data, POINTER(c_uint16 * (frame.contents.width * frame.contents.height)))
     data = np.frombuffer(
     array_pointer.contents, dtype=np.dtype(np.uint16)).reshape(frame.contents.height, frame.contents.width)
@@ -188,14 +186,24 @@ def raw_to_8bit(data):
 def getFrame():
     global maxVal
     global minVal
-    global data
+    global maxValbox
+    global minValbox
     data = q.get(True, 500) # Data format for dataset
     if data is None:
         print('No Data')
     minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(data)
+
+    x1 = [*range(0,150)]
+    y2 = [*range(0,150)]
+    box = data[np.ix_(x1,y2)]
+
+    minValbox, maxValbox, minLocbox, maxLocbox = cv2.minMaxLoc(box)
+
+    imgbox = cv2.LUT(raw_to_8bit(box), generate_colour_map(0))
+
     # Generates the frame into an image and return it
     img = cv2.LUT(raw_to_8bit(data), generate_colour_map(0))
-    return img, data
+    return img, maxVal, minVal, minValbox, maxValbox, imgbox
 
 def ktof(val):
     return round(((1.8 * ktoc(val) + 32.0)), 2)
@@ -224,39 +232,59 @@ def readTemp(unit, state):
     # Reads the temperature at the cursor's location
     else:
         print('What are you asking for?')
+
+def readTempBox(unit, state):
+    # Reads the maximum temperature
+    if state == 'max':
+        if unit == 'F':
+            return (str(ktof(maxValbox)) + ' ' + unit)
+        elif unit == 'C':
+            return (str(ktoc(maxValbox)) + ' ' + unit)
+        else:
+            print('What are you asking for?')
+    # Reads the minimum temperature
+    elif state == 'min':
+        if unit == 'F':
+            return (str(ktof(minValbox)) + ' ' + unit)
+        elif unit == 'C':
+            return (str(ktoc(minValbox)) + ' ' + unit)
+        else:
+            print('What are you asking for?')
+    # Reads the temperature at the cursor's location
+    else:
+        print('What are you asking for?')
 toggleUnitState = 'F'
 def main():
-    startStream()
+    startStream() 
     while True:
-        cam, data = getFrame()
-        minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(data)
+        cam, maxVal, minVal, minValbox, maxValbox, imgbox = getFrame()
 
-        x, y, a, b = 5, 10, 40, 50
-        cv2.rectangle(cam, (x,y), (x+a,y+b), (255,0,0), 2)
+        # minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(box)
 
-        maxTemp = 0
-        j = y
-        while j < y+b:
-            i = x
-            while i < x+a:
-                if data[i,j] > maxTemp:
-                    maxTemp = data[i,j]
-                i += 1
-            j += 1
+        x, y, a, b = 0, 0, 150, 150
+        rect = cv2.rectangle(cam, (x,y), (x+a,y+b), (255,0,0), 3)
 
+        # maxTemp = 0
+        # j = y
+        # while j < y+b:
+        #     i = x
+        #     while i < x+a:
+        #         if data[i,j] > maxTemp:
+        #             maxTemp = data[i,j]
+        #         i += 1
+        #     j += 1
 
-        print(maxTemp)
         cam = cv2.resize(cam, (640, 480))
+        
         print(readTemp(toggleUnitState, 'max'))
         print(readTemp(toggleUnitState, 'min'))
+        print(readTempBox(toggleUnitState, 'max'))
+        print(readTempBox(toggleUnitState, 'min'))
         print(" ")
-        print('Max Temp Loc: ' + str(maxLoc))
-        print('Min Temp Loc: ' + str(minLoc))
-        # print("Temp at 0,0" + ktof(data[0,0]))
-        print(" ")
-        cv2.rectangle(cam,(maxLoc),(minLoc),(255,255,0),5)
         cv2.imshow("Both",cam)
+        cv2.imshow("Image of box", imgbox)
         if cv2.waitKey(1) == ord('q'):
             break
     # When everything done, release the capture
+
 main()
