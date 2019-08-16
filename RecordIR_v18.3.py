@@ -20,7 +20,7 @@ import psutil
 from uvctypesParabilis_v2 import *
 from multiprocessing  import Queue
 import threading
-import pantilthat
+from adafruit_servokit import ServoKit
 from subprocess import call
 
 from postFunctions import *
@@ -59,14 +59,16 @@ from postFunctions import *
 
 toggleUnitState = 'F' # Default unit of temperature
 
+kit = ServoKit(channels=16)
+
 # qtCreatorFile = "ir_v11.ui"  # Enter file here.
 # postScriptFileName = "PostProcessIR_v11.py"
 
 # Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
 # Global variable decleration
-anglePan = 0        # Angle of pantilt Pan servo, range [-90,90]
-angleTilt = 0       # Angle of pantilt Titlt servo, range [-90,90]
+anglePan = 90        # Angle of pantilt Pan servo, range [-90,90]
+angleTilt = 90       # Angle of pantilt Titlt servo, range [-90,90]
 
 BUF_SIZE = 2        # Maximum size of Queue used for threading
 q = Queue(BUF_SIZE) # Constructor of Queue q
@@ -78,18 +80,17 @@ def pantiltSetup():
     global angleTilt
 
     # Enable pantilt servos
-    pantilthat.servo_enable(1, True)
-    pantilthat.servo_enable(2, True)
+    #kit = ServoKit(channels=16)
 
     # Center pantilt camera
-    pantilthat.pan(anglePan)
-    pantilthat.tilt(angleTilt)
+    kit.servo[0].angle = 90
+    kit.servo[1].angle = 90
 
     # Set up pantilt LED
-    pantilthat.light_type(pantilthat.RGBW)
-    pantilthat.light_mode(pantilthat.WS2812)
-    pantilthat.set_all(0,0,0,0)
-    pantilthat.show()
+    # pantilthat.light_type(pantilthat.RGBW)
+    # pantilthat.light_mode(pantilthat.WS2812)
+    # pantilthat.set_all(0,0,0,0)
+    # pantilthat.show()
 
 # Definition of Servo Error dialog window
 class servoErrorWindow(QDialog):
@@ -1369,10 +1370,10 @@ class App(QMainWindow, Ui_MainWindow):
        # Global variable to be used
         global angleTilt
 
-        if self.upButton.isEnabled():       # Check if button is currently held down
-            if angleTilt > -90:             # Move only if current position is greater than servo lower bound
-                angleTilt -= 5             # Adjust tilt angle by 10 degrees
-                pantilthat.tilt(angleTilt)  # Update tilt servo position
+        if self.upButton.isEnabled():           # Check if button is currently held down
+            if angleTilt > 0:                   # Move only if current position is greater than servo lower bound
+                angleTilt -= 5                  # Adjust tilt angle by 10 degrees
+                kit.servo[1].angle = angleTilt  # Update tilt servo position
     
     
     # Pantilt controller tilt down
@@ -1380,10 +1381,10 @@ class App(QMainWindow, Ui_MainWindow):
         # Global variable to be used
         global angleTilt
         
-        if self.downButton.isEnabled():     # Check if button is currently held down
-            if angleTilt <= 45:              # Move only if current position is less than servo upper bound
-                angleTilt += 5             # Adjust tilt angle by 10 degrees
-                pantilthat.tilt(angleTilt)  # Update tilt servo positon
+        if self.downButton.isEnabled():         # Check if button is currently held down
+            if angleTilt <= 180:                # Move only if current position is less than servo upper bound
+                angleTilt += 5                  # Adjust tilt angle by 10 degrees
+                kit.servo[1].angle = angleTilt  # Update tilt servo positon
             
 
     # Pantilt controller pan left
@@ -1392,9 +1393,9 @@ class App(QMainWindow, Ui_MainWindow):
         global anglePan
         
         if self.leftButton.isEnabled():     # Check if button is currently held down
-            if anglePan < 90:               # Move only if current position is less than servo upper bound
+            if anglePan < 180:               # Move only if current position is less than servo upper bound
                 anglePan += 5              # Adjust pan angle by 10 degrees
-                pantilthat.pan(anglePan)    # Update pan servo position
+                kit.servo[0].angle = anglePan    # Update pan servo position
 
     # Pantilt controller pan right
     def moveRight(self):
@@ -1402,16 +1403,17 @@ class App(QMainWindow, Ui_MainWindow):
         global anglePan
         
         if self.rightButton.isEnabled():    # Check if button is currently held down
-            if anglePan > -90:              # Move only if current position is greater than servo upper bound
+            if anglePan > 0:              # Move only if current position is greater than servo upper bound
                 anglePan -= 5              # Adjust pan angle by 10 degrees
-                pantilthat.pan(anglePan)    # Update pan servo position
+                kit.servo[0].angle = anglePan    # Update pan servo position
             
 
     # Pantilt LED brightness adjustment
     def LEDBrightness(self):
-        sV = self.LEDSlider.value()         # Store value of slider, range [0,255]
-        pantilthat.set_all(sV, sV, sV, sV)  # Set all LEDs to stored slider value
-        pantilthat.show()                   # Update LED bar values
+        # sV = self.LEDSlider.value()         # Store value of slider, range [0,255]
+        # pantilthat.set_all(sV, sV, sV, sV)  # Set all LEDs to stored slider value
+        # pantilthat.show()                   # Update LED bar values
+        print("it dont work")
 
 def main():
     app = QApplication(sys.argv)
